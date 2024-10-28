@@ -22,7 +22,7 @@ pub mod tests {
             .into_iter()
             .map(|i| (i.0, i.1))
             .collect::<HashMap<String, String>>();
-        let api_id = env_map.get("api_id").unwrap().to_string();
+        let api_id = env_map.get("secret_id").unwrap().to_string();
         let secret_key = env_map.get("secret_key").unwrap().to_string();
         return (api_id, secret_key);
     }
