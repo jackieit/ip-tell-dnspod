@@ -44,4 +44,37 @@ impl From<ReqwestError> for ItdError {
     ItdError::new("Reqwest".to_string(), err.to_string())
   }
 }
+impl From<argon2::password_hash::errors::Error> for ItdError {
+  fn from(err: argon2::password_hash::errors::Error) -> Self {
+    ItdError::new("PasswordHash".to_string(), err.to_string())
+  }
+}
+impl From<jsonwebtoken::errors::Error> for ItdError {
+  fn from(err: jsonwebtoken::errors::Error) -> Self {
+    ItdError::new("webtoken".to_string(), err.to_string())
+  }
+}
+impl From<base64::DecodeError> for ItdError {
+  fn from(err: base64::DecodeError) -> Self {
+    ItdError::new("base64 decode".to_string(), err.to_string())
+  }
+}
+impl From<sqlx::Error> for  ItdError {
+  fn from(err: sqlx::Error) -> Self {
+    ItdError::new("db error".to_string(), err.to_string())
+  }
+}
 pub type ItdResult<T> = Result<T, ItdError>;
+
+#[macro_export]
+macro_rules! err {
+    ( $msg:expr) => {
+        Err(crate::error::ItdError::new("__ERROR__".to_string(), $msg.to_string()))
+    };
+}
+#[macro_export]
+macro_rules! kerr {
+    ( $kind:expr,$msg:expr) => {
+        Err(crate::error::ItdError::new($kind.to_string(), $msg.to_string()))
+    };
+}

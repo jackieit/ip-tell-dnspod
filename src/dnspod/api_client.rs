@@ -196,6 +196,7 @@ mod tests {
         let client = Client::new(api_id,secret_key);
          
         let res: Value = client.do_request::<Value>("GET","DescribeDomainList","","").await?;
+        
         println!("{:?}", res.get("Response").unwrap().get("DomainList").unwrap());
         
        // assert!(res.is_ok());
