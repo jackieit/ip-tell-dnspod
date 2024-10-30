@@ -39,7 +39,12 @@ impl Client {
     /// 请求结果
     pub async fn do_request<U: DeserializeOwned>(&self, method:&str, action:&str, query:&str, body:&str) -> ItdResult<U> {
         let client = reqwest::Client::new();
-        let full_url = "https://dnspod.tencentcloudapi.com";
+        let full_url = 
+        if !query.is_empty() {
+            "https://dnspod.tencentcloudapi.com/".to_string() + "?" + query
+        }else{
+            "https://dnspod.tencentcloudapi.com/".to_string()
+        };
         let req_builder = match method {
             "GET" => client.get(full_url),
             "POST" => client.post(full_url),
@@ -53,7 +58,7 @@ impl Client {
          + "/" + &self.today + "/" + "dnspod/tc3_request, "
          + "SignedHeaders=content-type;host;x-tc-action, Signature=" 
          + &self.str_to_sign(method, action, query, body);
-        println!("authorization: {}", authorization);
+        //println!("authorization: {}", authorization);
         let req_builder = if !body.is_empty() {
             req_builder.body(body.to_string())
         } else {
