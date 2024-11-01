@@ -58,7 +58,11 @@ impl <'db>PodAction<'db> {
     
     todo!()
   }
-  pub fn get_hostname_from_domain(&self, domain: &str) -> Option<String> {
+  /// 获取域名主机名
+  /// # Argments
+  /// * domain: 域名 全域名形式带主机名 如 host.example.com
+  /// * domain_type: 域名类型 1: example.com example.cn 2: example.com.cn example.net.cn
+  pub fn get_hostname_from_domain(&self, domain: &str ,domain_type: i8) -> Option<String> {
     let parts: Vec<&str> = domain.split('.').collect();
     
     match parts.len() {
@@ -68,7 +72,13 @@ impl <'db>PodAction<'db> {
       3 => Some(parts[0].to_string()),
       _ => {
         //let main_domain = format!(".{}.{}", parts[parts.len()-2], parts[parts.len()-1]);
-        let sub_domain = parts[0..parts.len()-2].join(".");
+        let sub_domain = 
+        if domain_type == 1 {
+          parts[0..parts.len()-2].join(".")
+        } else {
+          parts[0..parts.len()-3].join(".")
+        };
+        //parts[0..parts.len()-2].join(".");
         Some(sub_domain)
       }
     }
@@ -118,7 +128,7 @@ mod tests {
     let action = PodAction::new(&db,1).await?;
    
     //assert_eq!(action.get_hostname_from_domain("www.example.com"), Some("www".to_string()));
-    assert_eq!(action.get_hostname_from_domain("x.i.cloud.example.com.cn"), Some("x.i.cloud".to_string()));
+    assert_eq!(action.get_hostname_from_domain("x.i.cloud.example.com.cn",2), Some("x.i.cloud".to_string()));
 
     Ok(())
   }
