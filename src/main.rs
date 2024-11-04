@@ -1,23 +1,22 @@
-
-use sqlx::sqlite::SqlitePool;
 use crate::error::ItdResult;
+use sqlx::sqlite::SqlitePool;
 mod dnspod;
-mod utils;
 mod error;
+mod ipaddr;
+mod utils;
 
 fn main() {
-   
     println!("Hello, world!");
 }
-pub async fn get_conn() -> ItdResult<SqlitePool>{
+pub async fn get_conn() -> ItdResult<SqlitePool> {
     let pool = SqlitePool::connect("sqlite:dnspod.db").await?;
     return Ok(pool);
 }
 #[cfg(test)]
 pub mod tests {
     use dotenv::dotenv;
-    use std::env;
     use std::collections::HashMap;
+    use std::env;
     /**
      * 获取临时密钥
      */
