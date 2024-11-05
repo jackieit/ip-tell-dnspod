@@ -1,11 +1,13 @@
+use std::net::IpAddr;
 mod ipv6_net;
 
+const REQUEST_AGENET: &str = "Ip-Tell-DNS/v0.1";
 #[derive(Debug, Clone)]
 pub enum IpType {
-    IpV4,
-    IpV6,
+    V4,
+    V6,
 }
 pub trait IpAddrExt {
     fn get_ip(&self, ip_type: IpType) -> String;
-    fn get_record_type(&self) -> String;
+    fn get_record_type(&self, ip: String) -> IpAddr;
 }
