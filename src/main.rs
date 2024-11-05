@@ -3,6 +3,7 @@ use sqlx::sqlite::SqlitePool;
 mod dnspod;
 mod error;
 mod ipaddr;
+mod model;
 mod utils;
 
 fn main() {

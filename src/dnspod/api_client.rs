@@ -2,8 +2,8 @@
 /// https://www.dnspod.cn/docs/records.html
 use sha2::{Sha256, Digest};
 use hex;
-use time::OffsetDateTime;
-use time::macros::format_description;
+//use time::OffsetDateTime;
+//use time::macros::format_description;
 use crate::error::{ItdResult,ItdError};
 use serde::de::DeserializeOwned;
 use hmac::{Hmac, Mac};
@@ -17,11 +17,10 @@ pub struct Client {
 }
 impl Client {
     pub fn new(secret_id: String, secret_key: String) -> Client {
-        let now =  OffsetDateTime::now_utc();
-        let timestamp = now.unix_timestamp().to_string();
-        let format = format_description!("[year]-[month]-[day]");
-        let today = now.format(format).expect("Failed to format date");
-        
+       
+        let now = chrono::Utc::now();
+        let today = now.format("%Y-%m-%d").to_string();
+        let timestamp = now.timestamp().to_string();
         Client {
             secret_id: secret_id,
             secret_key: secret_key,

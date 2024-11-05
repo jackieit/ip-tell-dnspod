@@ -38,6 +38,7 @@ CREATE TABLE "user_domain" (
   "domain" varchar(255) NOT NULL,
   "ip_type" tinyint(1) DEFAULT 1,
   "ip" varchar(255) NOT NULL,
+  "record_id" varchar(255) NOT NULL,
   "weight" integer DEFAULT 1,
   "ttl" integer DEFAULT 600
   "created_at" datetime DEFAULT CURRENT_TIMESTAMP,
