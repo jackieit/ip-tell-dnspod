@@ -43,8 +43,10 @@ impl Ipv6Net {
             return err!("http status code: status_code");
         }
         let ip = res["ip"].to_string();
-        let ip: IpAddr = ip.parse().unwrap();
-        Ok(ip)
+
+        let ip: Result<IpAddr, _> = ip.parse();
+        println!("ip: {:?}", ip);
+        Ok(ip.unwrap())
     }
 }
 impl IpAddrExt for Ipv6Net {

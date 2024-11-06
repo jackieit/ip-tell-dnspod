@@ -1,5 +1,5 @@
 use std::net::IpAddr;
-mod ipv6_net;
+pub mod ipv6_net;
 
 const REQUEST_AGENET: &str = "Ip-Tell-DNS/v0.1";
 #[derive(Debug, Clone)]

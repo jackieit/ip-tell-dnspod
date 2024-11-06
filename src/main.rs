@@ -1,4 +1,5 @@
 use crate::error::ItdResult;
+use crate::ipaddr::{ipv6_net::Ipv6Net, IpAddrExt, IpType};
 use sqlx::sqlite::SqlitePool;
 mod dnspod;
 mod error;
@@ -6,8 +7,15 @@ mod ipaddr;
 mod model;
 mod utils;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+    let mut ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V4);
+    let ip = ipaddr.do_request().await;
+    match ip {
+        Ok(ip) => println!("ip: {}", ip),
+        Err(e) => println!("err: {}", e),
+    }
 }
 pub async fn get_conn() -> ItdResult<SqlitePool> {
     let pool = SqlitePool::connect("sqlite:dnspod.db").await?;
