@@ -1,4 +1,7 @@
-use crate::error::ItdResult;
+use std::sync::{Arc, Mutex};
+
+use crate::dnspod::action::PodAction;
+use crate::{error::ItdResult, IpState};
 use chrono::NaiveDateTime;
 pub struct Records<'db> {
     pub db: &'db sqlx::Pool<sqlx::Sqlite>,
@@ -11,7 +14,7 @@ pub struct Record {
     pub domain: String,
     pub ip_type: i8,
     /// 原始记录id来源于Dnspod
-    pub record_id: String,
+    pub record_id: i32,
     pub ip: String,
     pub weight: i32,
     pub ttl: i32,
@@ -120,6 +123,36 @@ impl<'db> Records<'db> {
             .execute(self.db)
             .await?;
         Ok(result.rows_affected())
+    }
+    pub async fn update_by_ip(&self, ip: Arc<Mutex<IpState>>) -> ItdResult<u64> {
+        let ip = ip.lock().unwrap();
+        let ipv4 = ip.ipv4.clone().unwrap();
+        let ipv6 = ip.ipv6.clone().unwrap();
+        /*
+                let lists = self.get_record_list().await?;
+                for item in lists {
+                    let ip_value = if item.ip_type == 1 {
+                        ipv4.clone()
+                    } else {
+                        ipv6.clone()
+                    };
+                    println!("Update record domain: {} ,ip: {}", item.domain, &ip_value);
+                    sqlx::query!(
+                        r#"UPDATE user_domain SET ip = ? WHERE id = ?"#,
+                        ip_value,
+                        item.id
+                    )
+                    .execute(self.db)
+                    .await?;
+                    let action = PodAction::new(self.db, item.appid).await?;
+                    let record_type = if item.ip_type == 1 { "A" } else { "AAAA" };
+
+                    action
+                        .modify_record(&item.domain, item.record_id, record_type, &ip_value, 600)
+                        .await?;
+                }
+        */
+        todo!()
     }
     /// delete record
     pub async fn delete_record(&self, record_id: i32) -> ItdResult<u64> {

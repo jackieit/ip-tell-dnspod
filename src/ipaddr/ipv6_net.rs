@@ -1,13 +1,16 @@
 ///! 请求网站 test-ipv6.com
 ///！ 获取ipv4 https://ipv4.lookup.test-ipv6.com/ip/?asn=1&testdomain=test-ipv6.com&testname=test_asn4
 ///！ 获取ipv6 https://ipv6.lookup.test-ipv6.com/ip/?asn=1&testdomain=test-ipv6.com&testname=test_asn6
-use crate::ipaddr::{IpType, REQUEST_AGENET};
+use crate::ipaddr::{BoxFuture, IpType, REQUEST_AGENET};
+use crate::utils::timestamp;
+use crate::IpState;
 use crate::{err, error::ItdResult, ipaddr::IpAddrExt};
 use std::net::IpAddr;
+use std::sync::{Arc, Mutex};
 #[derive(Debug, Clone)]
 pub struct Ipv6Net {
     pub url: String,
-    pub ip: Option<IpAddr>,
+    // pub ip: Option<IpAddr>,
 }
 
 impl Ipv6Net {
@@ -25,11 +28,12 @@ impl Ipv6Net {
                 request_domain, request_domain
             ),
         };
-        Ipv6Net { url, ip: None }
+        Ipv6Net { url }
     }
 
-    pub async fn do_request(&mut self) -> ItdResult<IpAddr> {
-        let client = reqwest::Client::new();
+    pub async fn do_request(&self) -> ItdResult<IpAddr> {
+        let client = reqwest::Client::builder();
+        let client = client.no_proxy().build()?;
         let url = self.url.clone();
         let req = client.get(url);
         let req = req
@@ -42,19 +46,55 @@ impl Ipv6Net {
         if status_code != 200 {
             return err!("http status code: status_code");
         }
-        let ip = res["ip"].to_string();
+        // println!("res: {:?}", res);
+        let ip = res["ip"].to_string().clone();
+        //println!("ip: {}", ip);
+        let ip = ip.as_str().trim_matches('\"');
 
-        let ip: Result<IpAddr, _> = ip.parse();
-        println!("ip: {:?}", ip);
-        Ok(ip.unwrap())
+        //println!("ip: {}", ip);
+        // make sure ip is valid
+        let ip = ip.parse::<IpAddr>()?;
+
+        Ok(ip)
     }
 }
 impl IpAddrExt for Ipv6Net {
-    fn get_ip(&self, ip_type: IpType) -> String {
-        self.ip.unwrap().to_string()
+    fn get_ip(&self, ip_state: Arc<Mutex<IpState>>) -> BoxFuture<bool> {
+        Box::pin(async move {
+            let ip = self.do_request().await?;
+            // self.ip.unwrap().to_string();
+            if let Ok(mut data) = ip_state.lock() {
+                let ip_str = Some(ip.to_string());
+                if ip.is_ipv4() && data.ipv4 != ip_str {
+                    data.ipv4 = ip_str;
+                    data.ipv4_updated_at = timestamp();
+                    return Ok(true);
+                }
+                if ip.is_ipv6() && data.ipv6 != ip_str {
+                    data.ipv6 = ip_str;
+                    data.ipv6_updated_at = timestamp();
+                    return Ok(true);
+                }
+                if data.ipv6 == ip_str || data.ipv4 == ip_str {
+                    return Ok(false);
+                }
+            }
+
+            Ok(false)
+        })
     }
     fn get_record_type(&self, ip: String) -> IpAddr {
         let ip: IpAddr = ip.parse().unwrap();
         ip
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::IpAddr;
+    #[test]
+    fn it_ipaddr_parse_works() {
+        let ip = "141.11.149.246".parse::<IpAddr>();
+        println!("ip: {:?}", ip);
     }
 }
