@@ -80,6 +80,7 @@ impl Client {
         let res = req_builder.send().await?;
         let status_code = res.status();
         let res_text = res.text().await?;
+       // println!("res_text: {}", res_text);
         if status_code == 200 {
             let res: U = serde_json::from_str(&res_text)?;
             

@@ -1,7 +1,11 @@
+use crate::dnspod::action::PodAction;
 use crate::error::ItdResult;
 use crate::ipaddr::{ipv6_net::Ipv6Net, IpAddrExt, IpType};
 use crate::model::records::Records;
+
 use sqlx::sqlite::SqlitePool;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -19,23 +23,26 @@ pub struct IpState {
     ipv6: Option<String>,
     ipv6_updated_at: i64,
 }
+pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = ItdResult<T>> + Send + 'a>>;
+
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
-    let ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V6);
+    let ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V4);
     let ip_state = Arc::new(Mutex::new(IpState {
         ipv4: None,
         ipv4_updated_at: 0,
         ipv6: None,
         ipv6_updated_at: 0,
     }));
-    let db = SqlitePool::connect("sqlite:dnspod.db").await;
+    let db = get_conn().await;
     if db.is_err() {
         println!("db connect failed");
         return;
     }
-    let db = db.unwrap().clone();
-    let record_model = Records::new(&db);
+    let db = db.unwrap();
+    let db = Arc::new(db);
+
     let handle = tokio::spawn(async move {
         loop {
             // Do some work here
@@ -44,7 +51,76 @@ async fn main() {
             match ip {
                 Ok(ip_changed) => {
                     if ip_changed {
-                        record_model.update_by_ip(ip_state.clone()).await;
+                        let record_model = Records::new(&db);
+                        let lists = record_model.get_record_list().await;
+                        //println!("Record list: {:?}", lists);
+                        match lists {
+                            Err(e) => {
+                                println!("Error: {}", e);
+                            }
+                            Ok(lists) => {
+                                if lists.len() == 0 {
+                                    println!("No record found!");
+                                    continue;
+                                }
+                                for item in lists {
+                                    let ip_value = match item.ip_type.as_str() {
+                                        "A" => ip_state.lock().unwrap().ipv4.clone().unwrap(),
+                                        "AAAA" => ip_state.lock().unwrap().ipv6.clone().unwrap(),
+                                        _ => {
+                                            println!("Invalid ip type! {}", item.ip_type);
+                                            continue;
+                                        }
+                                    };
+                                    let domain = format!("{}.{}", item.host, item.domain);
+                                    println!("Update record domain: {} ,ip: {}", domain, &ip_value);
+                                    //let query_db = Arc::clone(&db);
+                                    let result = sqlx::query!(
+                                        r#"UPDATE user_domain SET ip = ? WHERE id = ?"#,
+                                        ip_value,
+                                        item.id
+                                    )
+                                    .execute(&*db)
+                                    .await;
+                                    match result {
+                                        Err(e) => {
+                                            println!("Update {} Error: {}", domain, e);
+                                        }
+                                        Ok(_) => {
+                                            let action = PodAction::new(&db, item.appid).await;
+                                            if action.is_err() {
+                                                println!(
+                                                    "Update {} Error: {}",
+                                                    domain,
+                                                    action.err().unwrap()
+                                                );
+                                                continue;
+                                            }
+                                            let action = action.unwrap();
+
+                                            let result = action
+                                                .modify_record(
+                                                    &item.host,
+                                                    &item.domain,
+                                                    item.record_id,
+                                                    &item.ip_type,
+                                                    &ip_value,
+                                                    600,
+                                                )
+                                                .await;
+                                            if result.is_err() {
+                                                println!(
+                                                    "Update {} Error: {}",
+                                                    domain,
+                                                    result.err().unwrap()
+                                                );
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         println!("IP not changed!");
                     }

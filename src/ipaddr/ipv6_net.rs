@@ -1,10 +1,10 @@
 ///! 请求网站 test-ipv6.com
 ///！ 获取ipv4 https://ipv4.lookup.test-ipv6.com/ip/?asn=1&testdomain=test-ipv6.com&testname=test_asn4
 ///！ 获取ipv6 https://ipv6.lookup.test-ipv6.com/ip/?asn=1&testdomain=test-ipv6.com&testname=test_asn6
-use crate::ipaddr::{BoxFuture, IpType, REQUEST_AGENET};
+use crate::ipaddr::{IpType, REQUEST_AGENET};
 use crate::utils::timestamp;
-use crate::IpState;
 use crate::{err, error::ItdResult, ipaddr::IpAddrExt};
+use crate::{BoxFuture, IpState};
 use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 #[derive(Debug, Clone)]

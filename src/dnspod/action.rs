@@ -36,8 +36,8 @@ pub struct DomainListResponse {
 pub struct RecordItem {
     pub record_id: i32,
     pub line: String,
-    pub line_id: i32,
-    pub mx: String,
+    pub line_id: String,
+
     pub name: String,
     pub r#type: String,
     pub updated_on: String,
@@ -49,7 +49,7 @@ pub struct RecordItem {
 #[serde(rename_all = "PascalCase")]
 pub struct RecordListResponse {
     pub error: Option<ResponseError>,
-    pub record_list: Vec<RecordItem>,
+    pub record_list: Option<Vec<RecordItem>>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -85,7 +85,8 @@ impl<'db> PodAction<'db> {
     }
     /// 添加域名
     /// #Args
-    /// * doamin 此处domain 为带主机名的域名
+    /// * host   如果为空，则默认为@
+    /// * doamin 此处domain 为不带主机名的域名
     /// * record_type 记录类型 A AAAA
     /// * ip 记录值
     /// * ttl DNS TTL
@@ -93,12 +94,14 @@ impl<'db> PodAction<'db> {
     /// * ItdResult<i32>
     ///     * 记录id
     pub async fn add_domain(
-        &mut self,
+        &self,
+        host: &str,
         domain: &str,
         record_type: &str,
         ip: &str,
         ttl: i32,
     ) -> ItdResult<i32> {
+        /*
         let mut find_result: Option<(String, String)> = None;
         for domain_type in 1..2 {
             let hostname = self.get_hostname_from_domain(domain, domain_type);
@@ -113,24 +116,23 @@ impl<'db> PodAction<'db> {
             } else {
                 continue;
             }
-        }
-        if find_result.is_none() {
+        }*/
+        let exists = self.find_domain(domain).await?;
+        if !exists {
             return err!("主域名不存在，请先在DNSPod上添加主域名");
         }
-        let (hostname, domain) = find_result.unwrap();
         let resords = self.find_records(&domain).await?;
         for record in resords {
             //已经存在需要更新域名,注意其它的记录类型会被替换为A类型
-            if record.name == hostname.clone() && (record.r#type == "A" || record.r#type == "AAAA")
-            {
-                self.modify_record(&domain, record.record_id, record_type, ip, ttl)
+            if record.name == host && (record.r#type == "A" || record.r#type == "AAAA") {
+                self.modify_record(host, &domain, record.record_id, record_type, ip, ttl)
                     .await?;
                 return Ok(record.record_id);
             }
         }
         // 添加记录
         let result = self
-            .create_record(&domain, &hostname, record_type, ip, ttl)
+            .create_record(&domain, host, record_type, ip, ttl)
             .await?;
         Ok(result)
     }
@@ -153,9 +155,10 @@ impl<'db> PodAction<'db> {
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
 
         let body = format!(
-            r#"{{\"Domain\":\"{}\",\"SubDomain\":{},\"RecordType\":{},\"RecordLine\":\"{}\",\"Value\":\"{}\",\"TTL\":\"{}\",\"STATUS\":\"ENABLE\"}}"#,
+            r#"{{"Domain":"{}","SubDomain":"{}","RecordType":"{}","RecordLine":"{}","Value":"{}","TTL":{},"Status":"ENABLE"}}"#,
             domain, hostname, record_type, "默认", ip, ttl
         );
+        println!("create_record ===》 {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "CreateRecord", "", &body)
             .await?;
@@ -175,6 +178,7 @@ impl<'db> PodAction<'db> {
     ///
     pub async fn modify_record(
         &self,
+        host: &str,
         domain: &str,
         record_id: i32,
         record_type: &str,
@@ -184,9 +188,10 @@ impl<'db> PodAction<'db> {
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
 
         let body = format!(
-            r#"{{\"Domain\":\"{}\",\"RecordId\":\"{}\",\"RecordType\":{},\"RecordLine\":\"{}\",\"Value\":\"{}\",\"TTL\":\"{}\",\"STATUS\":\"ENABLE\"}}"#,
-            domain, record_id, record_type, "默认", ip, ttl
+            r#"{{"Domain":"{}","RecordId":{},"RecordType":"{}","RecordLine":"{}","Value":"{}","TTL":{},"Status":"ENABLE","SubDomain":"{}"}}"#,
+            domain, record_id, record_type, "默认", ip, ttl, host
         );
+        println!("modify_record ===> {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "ModifyRecord", "", &body)
             .await?;
@@ -203,10 +208,8 @@ impl<'db> PodAction<'db> {
     pub async fn delete_record(&self, domain: &str, record_id: i32) -> ItdResult<()> {
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
 
-        let body = format!(
-            r#"{{\"Domain\":\"{}\",\"RecordId\":\"{}\"}}"#,
-            domain, record_id
-        );
+        let body = format!(r#"{{"Domain":"{}","RecordId":{}}}"#, domain, record_id);
+        println!("delete_record ===> {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "DeleteRecord", "", &body)
             .await?;
@@ -221,16 +224,15 @@ impl<'db> PodAction<'db> {
     pub async fn find_records(&self, domain: &str) -> ItdResult<Vec<RecordItem>> {
         // get domain host
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
-        let body = format!(r#"{{\"Domain\":\"{}\"}}"#, domain);
+        let body = format!(r#"{{"Domain":"{}"}}"#, domain);
+        println!("{}", body);
         let res = client
-            .do_request::<Response<RecordListResponse>>(
-                "POST",
-                "DescribeRecordFilterList",
-                "",
-                &body,
-            )
+            .do_request::<Response<RecordListResponse>>("POST", "DescribeRecordList", "", &body)
             .await?;
-        Ok(res.response.record_list)
+        if res.response.error.is_some() {
+            return err!(res.response.error.unwrap().message);
+        }
+        Ok(res.response.record_list.unwrap())
     }
     /// 获取域名主机名
     /// # Argments
@@ -257,7 +259,7 @@ impl<'db> PodAction<'db> {
         }
     }
     /// 查询域名是否已经存在
-    pub async fn find_domain(&mut self, domain: &str) -> ItdResult<bool> {
+    pub async fn find_domain(&self, domain: &str) -> ItdResult<bool> {
         let domain_list = self.get_domain_list().await?;
         for item in domain_list {
             if item.name == domain {
@@ -267,7 +269,7 @@ impl<'db> PodAction<'db> {
         return Ok(false);
     }
     /// 获取域名列表
-    pub async fn get_domain_list(&mut self) -> ItdResult<Vec<DomainItem>> {
+    pub async fn get_domain_list(&self) -> ItdResult<Vec<DomainItem>> {
         if self.domain_list.len() > 0 {
             return Ok(self.domain_list.clone());
         }
@@ -275,12 +277,13 @@ impl<'db> PodAction<'db> {
         let res = client
             .do_request::<Response<DomainListResponse>>("GET", "DescribeDomainList", "", "")
             .await?;
+        //println!("===>{:?}", res);
         //let response = res.get("Response").unwrap();
         if let Some(error) = res.response.error {
             return err!(error.message);
         }
         let domain_list = res.response.domain_list;
-        self.domain_list = domain_list.clone();
+        //self.domain_list = domain_list.clone();
         Ok(domain_list)
     }
 }

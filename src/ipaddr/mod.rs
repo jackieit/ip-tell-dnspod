@@ -1,8 +1,5 @@
-use crate::error::ItdResult;
-use crate::IpState;
-use std::future::Future;
+use crate::{BoxFuture, IpState};
 use std::net::IpAddr;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 pub mod ipv6_net;
@@ -13,7 +10,7 @@ pub enum IpType {
     V4,
     V6,
 }
-pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = ItdResult<T>> + Send + 'a>>;
+
 pub trait IpAddrExt {
     fn get_ip(&self, ip_state: Arc<Mutex<IpState>>) -> BoxFuture<bool>;
     fn get_record_type(&self, ip: String) -> IpAddr;
