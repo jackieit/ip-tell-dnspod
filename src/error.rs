@@ -1,4 +1,8 @@
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::Json;
 use reqwest::Error as ReqwestError;
+use serde_json::json;
 use serde_json::Error as JsonError;
 use std::fmt;
 use std::io::Error as IoError;
@@ -51,22 +55,78 @@ impl From<argon2::password_hash::errors::Error> for ItdError {
 }
 impl From<jsonwebtoken::errors::Error> for ItdError {
     fn from(err: jsonwebtoken::errors::Error) -> Self {
-        ItdError::new("webtoken".to_string(), err.to_string())
+        ItdError::new("Webtoken".to_string(), err.to_string())
     }
 }
 impl From<base64::DecodeError> for ItdError {
     fn from(err: base64::DecodeError) -> Self {
-        ItdError::new("base64 decode".to_string(), err.to_string())
+        ItdError::new("Base64Decode".to_string(), err.to_string())
     }
 }
 impl From<sqlx::Error> for ItdError {
     fn from(err: sqlx::Error) -> Self {
-        ItdError::new("db error".to_string(), err.to_string())
+        ItdError::new("DbError".to_string(), err.to_string())
     }
 }
 impl From<std::net::AddrParseError> for ItdError {
     fn from(err: std::net::AddrParseError) -> Self {
-        ItdError::new("addr parse".to_string(), err.to_string())
+        ItdError::new("AddrParse".to_string(), err.to_string())
+    }
+}
+impl From<validator::ValidationErrors> for ItdError {
+    fn from(err: validator::ValidationErrors) -> Self {
+        ItdError::new("RequestValidation".to_string(), err.to_string())
+    }
+}
+impl From<axum::extract::rejection::JsonRejection> for ItdError {
+    fn from(err: axum::extract::rejection::JsonRejection) -> Self {
+        ItdError::new("JsonRejection".to_string(), err.to_string())
+    }
+}
+impl From<AuthenticateError> for ItdError {
+    fn from(err: AuthenticateError) -> Self {
+        ItdError::new("AuthError".to_string(), err.to_string())
+    }
+}
+
+#[derive(Debug)]
+pub enum AuthenticateError {
+    WrongCredentials,
+    UserNotExists,
+    OperationForbidden,
+}
+impl fmt::Display for AuthenticateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AuthenticateError::WrongCredentials => {
+                write!(f, "WrongCredentials")
+            }
+            AuthenticateError::UserNotExists => {
+                write!(f, "UserNotExists")
+            }
+            AuthenticateError::OperationForbidden => {
+                write!(f, "OperationForbidden")
+            }
+        }
+    }
+}
+
+impl IntoResponse for ItdError {
+    fn into_response(self) -> Response {
+        let (status_code, code, message) = match self.0.as_str() {
+            "AuthError" => match self.1.as_str() {
+                "WrongCredentials" => (StatusCode::UNAUTHORIZED, 4010, "错误认证信息"),
+                "UserNotExists" => (StatusCode::UNAUTHORIZED, 4011, "用户不存在"),
+                "OperationForbidden" => (StatusCode::FORBIDDEN, 4030, "禁止访问"),
+                _ => (StatusCode::INTERNAL_SERVER_ERROR, 5000, self.1.as_str()),
+            },
+            "RequestValidation" => (StatusCode::UNPROCESSABLE_ENTITY, 4220, self.1.as_str()),
+            "ManError" => (StatusCode::UNPROCESSABLE_ENTITY, 4221, self.1.as_str()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, 5000, self.1.as_str()),
+        };
+        let body = Json(json!({ "code": code, "message": message }));
+
+        (status_code, body).into_response()
     }
 }
 pub type ItdResult<T> = Result<T, ItdError>;

@@ -10,6 +10,10 @@ use crate::error::{ItdError, ItdResult};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
+use tracing::Level;
+//use tracing_subscriber::{fmt, layer::SubscriberExt};
+use tracing_subscriber::fmt::writer::MakeWriterExt;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: i32,
@@ -126,6 +130,21 @@ pub fn decrypt_to_str(data: &str) -> ItdResult<String> {
     let data = String::from_utf8(data.into())?;
     Ok(data)
 }
+
+pub fn log_setup() {
+    let level = Level::INFO;
+
+    let logfile = tracing_appender::rolling::daily("logs", "main.log");
+    let stdout = std::io::stdout.with_max_level(level);
+
+    tracing_subscriber::fmt()
+        .with_max_level(level)
+        .with_file(true)
+        .with_line_number(true)
+        .with_writer(logfile.and(stdout))
+        .init();
+}
+
 #[macro_export]
 macro_rules! add_conn {
     ($struct_name:ident) => {

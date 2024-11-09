@@ -2,6 +2,10 @@ use crate::dnspod::action::PodAction;
 use crate::error::ItdResult;
 use crate::ipaddr::{ipv6_net::Ipv6Net, IpAddrExt, IpType};
 use crate::model::records::Records;
+use crate::utils::log_setup;
+use crate::web::main::http_server;
+
+use tracing::{error, info};
 
 use sqlx::sqlite::SqlitePool;
 use std::future::Future;
@@ -15,7 +19,7 @@ mod error;
 mod ipaddr;
 mod model;
 mod utils;
-
+mod web;
 #[derive(Debug, Clone)]
 pub struct IpState {
     ipv4: Option<String>,
@@ -23,11 +27,17 @@ pub struct IpState {
     ipv6: Option<String>,
     ipv6_updated_at: i64,
 }
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub db: SqlitePool,
+    pub ip_state: Arc<Mutex<IpState>>,
+}
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = ItdResult<T>> + Send + 'a>>;
 
 #[tokio::main]
 async fn main() {
-    println!("Hello, world!");
+    log_setup();
+    info!("Welcome to Ip Tell DnsPod!");
     let ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V4);
     let ip_state = Arc::new(Mutex::new(IpState {
         ipv4: None,
@@ -37,16 +47,23 @@ async fn main() {
     }));
     let db = get_conn().await;
     if db.is_err() {
-        println!("db connect failed");
+        info!("db connect failed");
         return;
     }
     let db = db.unwrap();
-    let db = Arc::new(db);
 
+    let share_state = Arc::new(AppState {
+        db: db.clone(),
+        ip_state: ip_state.clone(),
+    });
+    http_server(share_state.clone()).await;
+    //let db = Arc::new(db);
     let handle = tokio::spawn(async move {
+        //let conn = &Arc::clone(&share_state).db;
+
         loop {
             // Do some work here
-            println!("Thread is working...");
+            info!("Thread is working...");
             let ip = ipaddr.get_ip(ip_state.clone()).await;
             match ip {
                 Ok(ip_changed) => {
@@ -56,11 +73,11 @@ async fn main() {
                         //println!("Record list: {:?}", lists);
                         match lists {
                             Err(e) => {
-                                println!("Error: {}", e);
+                                error!("Error: {}", e);
                             }
                             Ok(lists) => {
                                 if lists.len() == 0 {
-                                    println!("No record found!");
+                                    info!("No record found!");
                                     continue;
                                 }
                                 for item in lists {
@@ -68,28 +85,28 @@ async fn main() {
                                         "A" => ip_state.lock().unwrap().ipv4.clone().unwrap(),
                                         "AAAA" => ip_state.lock().unwrap().ipv6.clone().unwrap(),
                                         _ => {
-                                            println!("Invalid ip type! {}", item.ip_type);
+                                            info!("Invalid ip type! {}", item.ip_type);
                                             continue;
                                         }
                                     };
                                     let domain = format!("{}.{}", item.host, item.domain);
-                                    println!("Update record domain: {} ,ip: {}", domain, &ip_value);
+                                    info!("Update record domain: {} ,ip: {}", domain, &ip_value);
                                     //let query_db = Arc::clone(&db);
                                     let result = sqlx::query!(
                                         r#"UPDATE user_domain SET ip = ? WHERE id = ?"#,
                                         ip_value,
                                         item.id
                                     )
-                                    .execute(&*db)
+                                    .execute(&db)
                                     .await;
                                     match result {
                                         Err(e) => {
-                                            println!("Update {} Error: {}", domain, e);
+                                            error!("Update {} Error: {}", domain, e);
                                         }
                                         Ok(_) => {
                                             let action = PodAction::new(&db, item.appid).await;
                                             if action.is_err() {
-                                                println!(
+                                                error!(
                                                     "Update {} Error: {}",
                                                     domain,
                                                     action.err().unwrap()
@@ -109,7 +126,7 @@ async fn main() {
                                                 )
                                                 .await;
                                             if result.is_err() {
-                                                println!(
+                                                error!(
                                                     "Update {} Error: {}",
                                                     domain,
                                                     result.err().unwrap()
@@ -122,22 +139,16 @@ async fn main() {
                             }
                         }
                     } else {
-                        println!("IP not changed!");
+                        info!("IP not changed!");
                     }
                 }
-                Err(e) => println!("Error: {}", e),
+                Err(e) => error!("Error: {}", e),
             }
             // Sleep for 1 second between iterations
             thread::sleep(Duration::from_secs(10));
         }
     });
     handle.await.unwrap();
-    //let ipadd =
-    //println!("ip: {:?}", ip_state.lock().unwrap().ipv6);
-    // match ip {
-    //     Ok(_) => println!("ip: {:?}", ip_state.lock().unwrap()),
-    //     Err(e) => println!("err: {}", e),
-    // }
 }
 pub async fn get_conn() -> ItdResult<SqlitePool> {
     let pool = SqlitePool::connect("sqlite:dnspod.db").await?;

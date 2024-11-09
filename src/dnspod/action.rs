@@ -2,6 +2,7 @@ use crate::dnspod::api_client::Client;
 use crate::err;
 use crate::error::ItdResult;
 use serde::Deserialize;
+use tracing::info;
 
 pub struct PodAction<'db> {
     db: &'db sqlx::Pool<sqlx::Sqlite>,
@@ -158,7 +159,7 @@ impl<'db> PodAction<'db> {
             r#"{{"Domain":"{}","SubDomain":"{}","RecordType":"{}","RecordLine":"{}","Value":"{}","TTL":{},"Status":"ENABLE"}}"#,
             domain, hostname, record_type, "默认", ip, ttl
         );
-        println!("create_record ===》 {}", body);
+        info!("create_record ===> {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "CreateRecord", "", &body)
             .await?;
@@ -191,7 +192,7 @@ impl<'db> PodAction<'db> {
             r#"{{"Domain":"{}","RecordId":{},"RecordType":"{}","RecordLine":"{}","Value":"{}","TTL":{},"Status":"ENABLE","SubDomain":"{}"}}"#,
             domain, record_id, record_type, "默认", ip, ttl, host
         );
-        println!("modify_record ===> {}", body);
+        info!("modify_record ===> {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "ModifyRecord", "", &body)
             .await?;
@@ -209,7 +210,7 @@ impl<'db> PodAction<'db> {
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
 
         let body = format!(r#"{{"Domain":"{}","RecordId":{}}}"#, domain, record_id);
-        println!("delete_record ===> {}", body);
+        info!("delete_record ===> {}", body);
         let res = client
             .do_request::<Response<AddRecordResponse>>("POST", "DeleteRecord", "", &body)
             .await?;
@@ -225,7 +226,7 @@ impl<'db> PodAction<'db> {
         // get domain host
         let client = Client::new(self.secret_id.clone(), self.secret_key.clone());
         let body = format!(r#"{{"Domain":"{}"}}"#, domain);
-        println!("{}", body);
+        info!("find records ===> {}", body);
         let res = client
             .do_request::<Response<RecordListResponse>>("POST", "DescribeRecordList", "", &body)
             .await?;
