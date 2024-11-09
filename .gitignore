@@ -3,3 +3,4 @@
 .env
 dnspod.db
 /wwwroot/*
+/logs
