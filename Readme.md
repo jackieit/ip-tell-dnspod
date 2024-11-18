@@ -1,4 +1,10 @@
 # rfc
+## todo
+1. 基于Axum api管理
+2. 基于api管理提供Web管理界面。
+3. 基于DNS自动管理letsencrypt免费证书。
+4. 获取的免费证书自动布置到 Nginx、IIS、Apache
+
 ## 介绍
 IpTellDnspod是一款创新性的工具，它巧妙地监听本地IPv4及IPv6地址的任何变动，并据此自动同步更新DNSPOD平台上的域名解析记录。借助DNSPOD最新的3.0版本API，我们确保了与服务的无缝集成与高效通信。
 
