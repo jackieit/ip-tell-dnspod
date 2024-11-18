@@ -56,11 +56,8 @@ async fn main() {
         db: db.clone(),
         ip_state: ip_state.clone(),
     });
-    http_server(share_state.clone()).await;
-    //let db = Arc::new(db);
-    let handle = tokio::spawn(async move {
-        //let conn = &Arc::clone(&share_state).db;
 
+    tokio::spawn(async move {
         loop {
             // Do some work here
             info!("Thread is working...");
@@ -148,7 +145,8 @@ async fn main() {
             thread::sleep(Duration::from_secs(10));
         }
     });
-    handle.await.unwrap();
+    //handle.await.unwrap();
+    http_server(share_state.clone()).await;
 }
 pub async fn get_conn() -> ItdResult<SqlitePool> {
     let pool = SqlitePool::connect("sqlite:dnspod.db").await?;

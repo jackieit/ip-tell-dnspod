@@ -74,6 +74,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
         )
 }
 pub async fn http_server(app_state: Arc<AppState>) {
+    println!("listening on {:?}", &app_state);
     let address = SocketAddr::from(([0, 0, 0, 0], 3310));
     let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
     let app = create_app(app_state).await;

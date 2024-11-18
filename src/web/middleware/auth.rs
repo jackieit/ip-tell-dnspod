@@ -18,7 +18,7 @@ pub struct Claims {
 
 #[derive(Clone)]
 pub struct UserIdentify {
-    pub id: i32,
+    pub id: i64,
     // pub user: Option<UserModel>,
 }
 pub async fn auth(

@@ -8,15 +8,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::error::{ItdError, ItdResult};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-
 use tracing::Level;
 //use tracing_subscriber::{fmt, layer::SubscriberExt};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: i32,
+    pub sub: i64,
     pub exp: i64,
     //pub id: i32,
 }
@@ -47,8 +47,32 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok()
 }
+pub fn validate_password(password: &str) -> Result<(), validator::ValidationError> {
+    let length_and_characters = Regex::new(r"^[A-Za-z\d@$!%*?&#]{8,}$").unwrap();
+    if !length_and_characters.is_match(password) {
+        return Err(validator::ValidationError::new("密码码格式错误"));
+    }
+    // Check if the password contains at least one letter
+    let has_letter = Regex::new(r"[a-zA-Z]").unwrap();
+    if !has_letter.is_match(password) {
+        return Err(validator::ValidationError::new("需要至少一个字符"));
+    }
+
+    // Check if the password contains at least one digit
+    let has_digit = Regex::new(r"\d").unwrap();
+    if !has_digit.is_match(password) {
+        return Err(validator::ValidationError::new("需要至少一个数字"));
+    }
+
+    // Check if the password contains at least one special character
+    let has_special_char = Regex::new(r"[@$!%*?&#]").unwrap();
+    if !has_special_char.is_match(password) {
+        return Err(validator::ValidationError::new("需要至少一个特殊字符"));
+    }
+    Ok(())
+}
 // encode accesstoken
-pub fn encode_token(userid: i32, exp: i64) -> ItdResult<(String, i64)> {
+pub fn encode_token(userid: i64, exp: i64) -> ItdResult<(String, i64)> {
     let jwt_secret = "AppEnv::get_env().jwt_secret";
     let exp = timestamp() + exp;
     let claims = Claims {
