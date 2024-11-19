@@ -1,8 +1,8 @@
+use crate::add_conn;
 use crate::error::ItdResult;
 use chrono::NaiveDateTime;
-pub struct Records<'db> {
-    pub db: &'db sqlx::Pool<sqlx::Sqlite>,
-}
+
+add_conn!(Records);
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Record {
@@ -22,9 +22,6 @@ pub struct Record {
     pub secret_key: Option<String>,
 }
 impl<'db> Records<'db> {
-    pub fn new(db: &'db sqlx::Pool<sqlx::Sqlite>) -> Self {
-        Records { db }
-    }
     /// get all records
     pub async fn get_record_list(&self) -> ItdResult<Vec<Record>> {
         let record_list: Vec<Record> = sqlx::query_as(

@@ -41,3 +41,5 @@ validator = { version = "0.18", features = ["derive"] }
 once_cell = { version = "1" }
 [dev-dependencies]
 dotenv = "0.15"
+http-body-util="0.1"
+mime = "0.3"

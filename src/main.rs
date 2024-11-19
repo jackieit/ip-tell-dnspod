@@ -5,6 +5,7 @@ use crate::model::records::Records;
 use crate::utils::log_setup;
 use crate::web::main::http_server;
 
+use model::app;
 use tracing::{error, info};
 
 use sqlx::sqlite::SqlitePool;
@@ -39,24 +40,9 @@ async fn main() {
     log_setup();
     info!("Welcome to Ip Tell DnsPod!");
     let ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V4);
-    let ip_state = Arc::new(Mutex::new(IpState {
-        ipv4: None,
-        ipv4_updated_at: 0,
-        ipv6: None,
-        ipv6_updated_at: 0,
-    }));
-    let db = get_conn().await;
-    if db.is_err() {
-        info!("db connect failed");
-        return;
-    }
-    let db = db.unwrap();
-
-    let share_state = Arc::new(AppState {
-        db: db.clone(),
-        ip_state: ip_state.clone(),
-    });
-
+    let app_state = get_app_state().await;
+    let ip_state = app_state.ip_state.clone();
+    let db = app_state.db.clone();
     tokio::spawn(async move {
         loop {
             // Do some work here
@@ -146,7 +132,30 @@ async fn main() {
         }
     });
     //handle.await.unwrap();
-    http_server(share_state.clone()).await;
+    http_server(app_state.clone()).await;
+}
+pub async fn get_app_state() -> Arc<AppState> {
+    let ip_state = Arc::new(Mutex::new(IpState {
+        ipv4: None,
+        ipv4_updated_at: 0,
+        ipv6: None,
+        ipv6_updated_at: 0,
+    }));
+    let db = get_conn().await;
+    if db.is_err() {
+        info!("db connect failed");
+        return Arc::new(AppState {
+            db: get_conn().await.unwrap(),
+            ip_state,
+        });
+    }
+    let db = db.unwrap();
+
+    let share_state = Arc::new(AppState {
+        db: db.clone(),
+        ip_state: ip_state.clone(),
+    });
+    share_state
 }
 pub async fn get_conn() -> ItdResult<SqlitePool> {
     let pool = SqlitePool::connect("sqlite:dnspod.db").await?;

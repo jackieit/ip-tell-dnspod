@@ -1,5 +1,7 @@
 use super::constants::{RespMsg, USERNAME_REGEX};
+use crate::add_conn;
 use crate::err;
+
 use crate::error::ItdResult;
 use crate::utils::{encode_token, password_hash, verify_password};
 use axum::Json;
@@ -8,10 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use validator::Validate;
 
-#[derive(Debug, Clone)]
-pub struct UserModel<'db> {
-    pub db: &'db sqlx::Pool<sqlx::Sqlite>,
-}
+add_conn!(UserModel);
 pub struct UserRow {
     pub id: Option<i64>,
     pub password: String,
@@ -28,9 +27,6 @@ pub struct UserToken {
     token: String,
 }
 impl<'db> UserModel<'db> {
-    pub fn new(db: &'db sqlx::Pool<sqlx::Sqlite>) -> Self {
-        UserModel { db }
-    }
     /// 用户登录
     pub async fn login(&self, payload: LoginForm) -> ItdResult<UserToken> {
         let username = payload.username;
@@ -59,7 +55,7 @@ impl<'db> UserModel<'db> {
         })
     }
     /// 用户添加
-    pub async fn signup(&self, payload: SignupForm) -> ItdResult<UserToken> {
+    pub async fn create_user(&self, payload: SignupForm) -> ItdResult<UserToken> {
         println!("signup payload: {:?}", payload);
         let username = payload.username;
         // let mobile_secure = encrypt_data(mobile.as_bytes().to_vec())?;
@@ -97,7 +93,7 @@ impl<'db> UserModel<'db> {
     // 用户密码修改
     pub async fn password_reset(
         &self,
-        uid: i32,
+        uid: i64,
         payload: PasswordForm,
     ) -> ItdResult<Json<RespMsg>> {
         // find user by id
@@ -149,11 +145,4 @@ pub struct PasswordForm {
     pub old_password: String,
     #[validate(custom(function = "crate::utils::validate_password", message = "密码格式错误"))]
     pub new_password: String,
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[tokio::test]
-    async fn test_decrypt() {}
 }

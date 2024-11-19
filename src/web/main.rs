@@ -33,7 +33,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
         .append_index_html_on_directories(true)
         .not_found_service(ServeFile::new("wwwroot/h5/index.html"));
     Router::new()
-        //.merge(routes::admin::create_route())
+        .merge(super::routes::user::create_route())
         .nest_service("/h5", create_react_app)
         .nest_service("/", serve_service)
         .with_state(app_state.clone())
@@ -115,7 +115,8 @@ async fn shutdown_signal() {
     println!("signal received, starting graceful shutdown");
 }
 // only used for test
-pub async fn test_app(app_state: Arc<AppState>) -> Router {
+pub async fn test_app() -> Router {
+    let app_state = crate::get_app_state().await;
     let mut app = create_app(app_state).await;
     app = app.layer(MockConnectInfo(SocketAddr::from(([0, 0, 0, 0], 3002))));
     app

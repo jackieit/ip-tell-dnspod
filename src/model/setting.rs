@@ -1,14 +1,11 @@
-use std::collections::HashMap;
-
+use crate::add_conn;
 use crate::err;
 use crate::error::ItdResult;
-pub struct SettingModel<'db> {
-    pub db: &'db sqlx::Pool<sqlx::Sqlite>,
-}
+use std::collections::HashMap;
+
+add_conn!(SettingModel);
+
 impl<'db> SettingModel<'db> {
-    pub fn new(db: &'db sqlx::Pool<sqlx::Sqlite>) -> Self {
-        SettingModel { db }
-    }
     // query setting BY KEY
     pub async fn get(&self, key: &str) -> ItdResult<String> {
         let setting = sqlx::query_as::<_, (String,)>("SELECT value FROM setting WHERE `key` = ?")
