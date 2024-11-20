@@ -52,39 +52,59 @@ async fn password_reset(
 
 #[cfg(test)]
 mod tests {
-    use crate::web::main::test_app;
-    use axum::body::Body;
-    use axum::http::Request;
-    use http_body_util::BodyExt;
-    use serde_json::{json, Value};
-    use tower::ServiceExt;
-    #[tokio::test]
-    async fn it_test_login_should_work() {
-        let app = test_app().await;
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method(http::Method::POST)
-                    .uri("/user/signin")
-                    .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-                    .header(http::header::USER_AGENT, "tokio-test")
-                    .body(Body::from(
-                        serde_json::to_vec(&json!({
-                            "username": "admin",
-                            "password": "Abc@123"
-                        }))
-                        .unwrap(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        //assert_eq!(response.status(), StatusCode::OK);
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body: Value = serde_json::from_slice(&body).unwrap();
-        println!("response ===>{}", body);
-        assert_eq!(body.get("code"), Some(&Value::Number(40022.into())));
 
-        assert_eq!(body.get("token").is_some(), true)
+    use crate::{error::ItdResult, utils::decode_token, web::main::tests::request};
+    #[tokio::test]
+    async fn it_test_login_should_work() -> ItdResult<()> {
+        println!("密码错误测试Case");
+        let body = r#"{"username": "admin","password": "123456"}"#;
+
+        let response = request("/user/signin", "POST", Some(body), None).await?;
+        //println!("{:?}", response);
+        let code = response["code"].as_i64();
+        assert_eq!(code, Some(4220_i64));
+        // 密码正确测试Case
+        println!("密码正确测试Case");
+        //assert_eq!(body.get("token").is_some(), true)
+
+        let body = r#"{
+            "username": "admin",
+            "password": "Abc@1234"
+        }"#;
+        let response = request("/user/signin", "POST", Some(body), None).await?;
+        println!("{:?}", response);
+        let token = response["token"].as_str();
+        assert_eq!(token.is_some(), true);
+        //let token = token.unwrap();
+        println!("测试密码重置");
+        let body = r#"{
+            "old_password": "Abc@1234",
+            "new_password": "Abc@1234"
+        }"#;
+        let response = request("/user/password-reset", "POST", Some(body), token).await?;
+        println!("{:?}", response);
+        let result = response["code"].as_i64().unwrap();
+        assert_eq!(result, 1000);
+        // 添加用户测试Case
+        println!("添加用户测试Case");
+        let body = r#"{
+            "username": "test001",
+            "password": "Abc@1234",
+            "repassword": "Abc@1234"
+        }"#;
+        let response = request("/user/create", "POST", Some(body), token).await?;
+        println!("{:?}", response);
+        let token = response["token"].as_str();
+        assert_eq!(token.is_some(), true);
+        println!("删除用户测试Case");
+        let token = token.unwrap();
+        let claims = decode_token(token)?;
+        let uid = claims.sub;
+        let db = crate::get_conn().await?;
+        let result = sqlx::query!(r#"delete from user where id=? "#, uid)
+            .execute(&db)
+            .await?;
+        assert_eq!(result.rows_affected(), 1);
+        Ok(())
     }
 }

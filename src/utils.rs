@@ -12,8 +12,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 //use tracing_subscriber::{fmt, layer::SubscriberExt};
+use crate::model::constants::{AES_KEY, JWT_SECRET};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: i64,
@@ -73,7 +73,7 @@ pub fn validate_password(password: &str) -> Result<(), validator::ValidationErro
 }
 // encode accesstoken
 pub fn encode_token(userid: i64, exp: i64) -> ItdResult<(String, i64)> {
-    let jwt_secret = "AppEnv::get_env().jwt_secret";
+    // let jwt_secret = "EDs-ARpmZLI_eSX-LOMzt6B6abs07dmgj4sSe7woO-4";
     let exp = timestamp() + exp;
     let claims = Claims {
         sub: userid,
@@ -82,17 +82,17 @@ pub fn encode_token(userid: i64, exp: i64) -> ItdResult<(String, i64)> {
     let token = encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(jwt_secret.as_ref()),
+        &EncodingKey::from_secret(JWT_SECRET.as_ref()),
     )?;
 
     Ok((token, exp))
 }
 // decode accesstoken
 pub fn decode_token(token: &str) -> ItdResult<Claims> {
-    let jwt_secret = "AppEnv::get_env().jwt_secret";
+    //let jwt_secret = "EDs-ARpmZLI_eSX-LOMzt6B6abs07dmgj4sSe7woO-4";
     let token_message = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(jwt_secret.as_ref()),
+        &DecodingKey::from_secret(JWT_SECRET.as_ref()),
         &Validation::new(Algorithm::HS256),
     )?;
 
@@ -100,10 +100,9 @@ pub fn decode_token(token: &str) -> ItdResult<Claims> {
 }
 
 /// encrypt string with aes
+#[allow(dead_code)]
 pub fn encrypt_data(data: Vec<u8>) -> ItdResult<String> {
-    let mch_key = "AppEnv::get_env().aes_key";
-
-    let mch_key = STANDARD.decode(&mch_key)?;
+    let mch_key = STANDARD.decode(&AES_KEY)?;
     let mch_key = mch_key.as_slice();
     type Aes128CbcEnc = cbc::Encryptor<aes::Aes128>;
     let pt_len = data.len();
@@ -128,10 +127,9 @@ pub fn encrypt_data(data: Vec<u8>) -> ItdResult<String> {
 }
 
 /// decrypt base64 data to Vec<u8>
+#[allow(dead_code)]
 pub fn decrypt_data(data: &str) -> ItdResult<Vec<u8>> {
-    let mch_key = "AppEnv::get_env().aes_key";
-
-    let mch_key = STANDARD.decode(&mch_key)?;
+    let mch_key = STANDARD.decode(&AES_KEY)?;
 
     let mch_key = mch_key.as_slice();
     type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
@@ -149,6 +147,7 @@ pub fn decrypt_data(data: &str) -> ItdResult<Vec<u8>> {
     Ok(pt.to_vec())
 }
 /// decrypt base64 data to string
+#[allow(dead_code)]
 pub fn decrypt_to_str(data: &str) -> ItdResult<String> {
     let data = decrypt_data(data)?;
     let data = String::from_utf8(data.into())?;

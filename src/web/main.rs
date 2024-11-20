@@ -121,3 +121,55 @@ pub async fn test_app() -> Router {
     app = app.layer(MockConnectInfo(SocketAddr::from(([0, 0, 0, 0], 3002))));
     app
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use crate::error::ItdResult;
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use serde_json::Value;
+    use tower::ServiceExt;
+    /// 测试请求
+    /// #Arguments
+    /// * `uri` - 请求的uri
+    /// * `body` - 请求的body
+    /// * `method` - 请求的方法
+    /// * `token` - 请求的token
+    /// #Returns
+    /// * `ItdResult<Value>` - 返回的结果
+    pub async fn request(
+        url: &str,
+        method: &str,
+        body: Option<&str>,
+        token: Option<&str>,
+    ) -> ItdResult<Value> {
+        let app = test_app().await;
+        let method = method.parse::<http::Method>().unwrap();
+        let request = Request::builder()
+            .method(method)
+            .uri(url)
+            .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+            .header(http::header::USER_AGENT, "tokio-test");
+        let request = match token {
+            Some(token) => {
+                request.header(http::header::AUTHORIZATION, "Bearer ".to_string() + token)
+            }
+            None => request,
+        };
+        let body = match body {
+            Some(body) => {
+                let body_json = serde_json::from_str::<serde_json::Value>(body).unwrap();
+                Body::from(serde_json::to_vec(&body_json).unwrap())
+            }
+            None => Body::empty(),
+        };
+
+        let response = app.oneshot(request.body(body).unwrap()).await.unwrap();
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let body: Value = serde_json::from_slice(&body).unwrap();
+        Ok(body)
+    }
+}
