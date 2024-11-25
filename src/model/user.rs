@@ -146,3 +146,22 @@ pub struct PasswordForm {
     #[validate(custom(function = "crate::utils::validate_password", message = "密码格式错误"))]
     pub new_password: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn it_insert_admin () -> ItdResult<()> {
+         let db = crate::get_conn().await?;
+         let user_model = UserModel { db: &db };
+         let data = SignupForm {
+             username: "admin".to_string(),
+             password: "Abc@1234".to_string(),
+             repassword: "Abc@1234".to_string(),
+         };
+         let token = user_model.create_user(data).await?;
+         assert_eq!(token.token.is_empty(),false);
+         Ok(())
+    }
+}

@@ -118,7 +118,10 @@ pub struct AppForm {
     pub secret_id: String,
     pub secret_key: String,
 }
-
+#[derive(Deserialize, Debug, Validate)]
+pub struct StatusForm {
+    pub status: i32,
+}
 #[cfg(test)]
 mod tests {
     use chrono::Local;

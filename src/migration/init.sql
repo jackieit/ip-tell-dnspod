@@ -10,8 +10,8 @@ CREATE TABLE "user_apps" (
   "id" integer PRIMARY KEY AUTOINCREMENT,
   "uid" integer NOT NULL,
   "title" varchar(255) NOT NULL,
-  "appid" integer NOT NULL,
-  "secret" varchar(255) NOT NULL,
+  "secret_id" varchar(255) NOT NULL,
+  "secret_key" varchar(255) NOT NULL,
   "created_at" datetime DEFAULT CURRENT_TIMESTAMP,
   "updated_at" datetime DEFAULT CURRENT_TIMESTAMP,
   "status" tinyint(1) DEFAULT 1

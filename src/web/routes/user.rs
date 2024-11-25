@@ -13,9 +13,9 @@ use axum::{extract::State, routing::post, Extension, Json, Router};
 
 pub fn create_route() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/user/signin", post(login))
-        .route("/user/create", post(create_user))
-        .route("/user/password-reset", post(password_reset))
+        .route("/v1/user/signin", post(login))
+        .route("/v1/user/create", post(create_user))
+        .route("/v1/user/password-reset", post(password_reset))
     //.route("/user/is-admin", post(is_admin))
 }
 
@@ -59,7 +59,7 @@ mod tests {
         println!("密码错误测试Case");
         let body = r#"{"username": "admin","password": "123456"}"#;
 
-        let response = request("/user/signin", "POST", Some(body), None).await?;
+        let response = request("/v1/user/signin", "POST", Some(body), None).await?;
         //println!("{:?}", response);
         let code = response["code"].as_i64();
         assert_eq!(code, Some(4220_i64));
@@ -71,7 +71,7 @@ mod tests {
             "username": "admin",
             "password": "Abc@1234"
         }"#;
-        let response = request("/user/signin", "POST", Some(body), None).await?;
+        let response = request("/v1/user/signin", "POST", Some(body), None).await?;
         println!("{:?}", response);
         let token = response["token"].as_str();
         assert_eq!(token.is_some(), true);
@@ -81,7 +81,7 @@ mod tests {
             "old_password": "Abc@1234",
             "new_password": "Abc@1234"
         }"#;
-        let response = request("/user/password-reset", "POST", Some(body), token).await?;
+        let response = request("/v1/user/password-reset", "POST", Some(body), token).await?;
         println!("{:?}", response);
         let result = response["code"].as_i64().unwrap();
         assert_eq!(result, 1000);
@@ -92,7 +92,7 @@ mod tests {
             "password": "Abc@1234",
             "repassword": "Abc@1234"
         }"#;
-        let response = request("/user/create", "POST", Some(body), token).await?;
+        let response = request("/v1/user/create", "POST", Some(body), token).await?;
         println!("{:?}", response);
         let token = response["token"].as_str();
         assert_eq!(token.is_some(), true);

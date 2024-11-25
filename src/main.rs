@@ -5,7 +5,7 @@ use crate::model::records::Records;
 use crate::utils::log_setup;
 use crate::web::main::http_server;
 
-use model::app;
+//use model::app;
 use tracing::{error, info};
 
 use sqlx::sqlite::SqlitePool;
