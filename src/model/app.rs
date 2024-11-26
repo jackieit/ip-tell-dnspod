@@ -2,6 +2,7 @@ use crate::add_conn;
 use crate::error::ItdResult;
 use crate::model::constants::RespMsg;
 use crate::utils::encrypt_data;
+use crate::web::routes::app;
 
 use axum::Json;
 use chrono::Local;
@@ -65,9 +66,25 @@ impl<'db> AppModel<'db> {
             secret_id,
             secret_key,
         } = payload;
-        let secret_id = encrypt_data(secret_id.as_bytes().to_vec())?;
+        let app = sqlx::query_as!(
+            AppItem,
+            r#"SELECT id,uid,title,secret_id,secret_key,created_at,updated_at,status FROM user_apps WHERE id=?"#,
+            id
+        )
+        .fetch_one(self.db)
+        .await?;
+        
+        let secret_id = if app.secret_id !=secret_id {
+            encrypt_data(secret_id.as_bytes().to_vec())?
+        }else{
+            secret_id
+        };
         //println!("secret_id: {:?}", secret_id);
-        let secret_key = encrypt_data(secret_key.as_bytes().to_vec())?;
+        let secret_key = if app.secret_key != secret_key {
+            encrypt_data(secret_key.as_bytes().to_vec())?
+        }else{
+            secret_key
+        };
         let now = Local::now().naive_local();
         sqlx::query!(
             r#"UPDATE user_apps SET uid=?,title=?,secret_id=?,secret_key=?,updated_at=? WHERE id=?"#,
@@ -120,7 +137,7 @@ pub struct AppForm {
 }
 #[derive(Deserialize, Debug, Validate)]
 pub struct StatusForm {
-    pub status: i32,
+    pub status: i64,
 }
 #[cfg(test)]
 mod tests {

@@ -185,10 +185,21 @@ macro_rules! add_conn {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::RngCore;
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+
     #[test]
     fn it_password_hash_works() {
         let password = "admin";
         let password = password_hash(password).unwrap();
         println!("{}", password)
+    }
+    #[test]
+    fn generate_aes_key() {
+       // assert!(matches!(key_size, 16 | 24 | 32), "Invalid AES key size");
+        let mut key = vec![0u8; 16];
+        rand::thread_rng().fill_bytes(&mut key[..]);
+        let result = STANDARD.encode(key);
+        println!("{}", result);
     }
 }

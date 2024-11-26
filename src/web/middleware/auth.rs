@@ -29,9 +29,9 @@ pub async fn auth(
     let path = req.uri().path().to_string();
     let cmp_path = path.clone();
     let method = req.method().clone();
-    if cmp_path == "/user/signin"
-        || cmp_path.starts_with("/user/signup")
-        || cmp_path.starts_with("/utils")
+    if cmp_path == "/v1/user/signin"
+        || cmp_path.starts_with("/v1/user/signup")
+        || cmp_path.starts_with("/v1/utils")
         || cmp_path.starts_with("/assets")
         || cmp_path.starts_with("/h5")
         || cmp_path == "/"

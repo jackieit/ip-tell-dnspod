@@ -33,6 +33,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
         .append_index_html_on_directories(true)
         .not_found_service(ServeFile::new("wwwroot/h5/index.html"));
     Router::new()
+        .merge(super::routes::app::create_route())
         .merge(super::routes::user::create_route())
         .nest_service("/h5", create_react_app)
         .nest_service("/", serve_service)
