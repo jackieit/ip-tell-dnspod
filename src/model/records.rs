@@ -1,9 +1,14 @@
 use crate::add_conn;
 use crate::error::ItdResult;
+use axum::Json;
 use chrono::NaiveDateTime;
+use crate::model::constants::Pagination;
+use validator::Validate;
 
 add_conn!(Records);
 use serde::{Deserialize, Serialize};
+
+
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Record {
     pub id: i32,
@@ -23,6 +28,7 @@ pub struct Record {
 }
 impl<'db> Records<'db> {
     /// get all records
+ 
     pub async fn get_record_list(&self) -> ItdResult<Vec<Record>> {
         let record_list: Vec<Record> = sqlx::query_as(
             r#"SELECT 
@@ -36,15 +42,49 @@ impl<'db> Records<'db> {
         .await?;
         Ok(record_list)
     }
+    /// search by appid and return 
+    pub async fn search(&self,appid: Option<i32>, page: i32) -> ItdResult<Json<Pagination<Record>>> {
+        let offset = (page - 1) * 10;
+        let sql_base = r#"SELECT 
+                     i.id ,appid,host,domain,ip_type,ip,weight,ttl,i.created_at,i.updated_at
+                     ,i.record_id
+                     ,ii.secret_id,ii.secret_key
+                     FROM user_domain i left join user_apps ii on i.appid=ii.id "#;
+        let sql_total = if let Some(appid) = appid {
+            format!("{} where i.appid= {}",sql_base,appid)
+        }else{
+            sql_base.to_string()
+        };
+        let total: i32 = sqlx::query_scalar(&sql_total)
+        .bind(appid)
+        .fetch_one(self.db)
+        .await?;
+        let sql_query = if let Some(appid) = appid {
+            format!("{} where i.appid={} limit {},10",sql_base,appid,offset)
+        }else{
+            format!("{} limit {},10",sql_base,offset)
+        };
+        let record_list: Vec<Record> = sqlx::query_as(&sql_query)
+        .bind(appid)
+        .bind(offset)
+        .fetch_all(self.db)
+        .await?;
+        let pagination = Json(Pagination {
+            count: total,
+            page,
+            data: record_list,
+        });
+        Ok(pagination)
+    }
     /// get one record
-    pub async fn get_record(&self, record_id: i32) -> ItdResult<Option<Record>> {
+    pub async fn get_record(&self, record_id: i64) -> ItdResult<Option<Record>> {
         let record: Option<Record> = sqlx::query_as(
             r#"SELECT 
              i.id ,appid,host,domain,ip_type,ip,weight,ttl,i.created_at,i.updated_at
              ,i.record_id
              ,ii.secret_id,ii.secret_key
              FROM user_domain i left join user_apps ii on i.appid=ii.id
-             where i.id=?1
+             where i.id=?
             "#,
         )
         .bind(record_id)
@@ -99,7 +139,7 @@ impl<'db> Records<'db> {
         Ok(result.last_insert_rowid())
     }
     /// update record
-    pub async fn update_record(&self, id: i32, payload: RecordForm) -> ItdResult<u64> {
+    pub async fn update_record(&self, id: i64, payload: RecordForm) -> ItdResult<u64> {
         let RecordForm {
             appid,
             host,
@@ -126,7 +166,7 @@ impl<'db> Records<'db> {
         Ok(result.rows_affected())
     }
     /// delete record
-    pub async fn delete_record(&self, record_id: i32) -> ItdResult<u64> {
+    pub async fn delete_record(&self, record_id: i64) -> ItdResult<u64> {
         let result = sqlx::query!(r#"delete from user_domain where record_id = ?"#, record_id)
             .execute(self.db)
             .await?;
@@ -134,7 +174,7 @@ impl<'db> Records<'db> {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct RecordForm {
     pub appid: i32,
     pub host: String,
@@ -145,7 +185,11 @@ pub struct RecordForm {
     pub record_id: Option<i32>,
     pub ttl: i32,
 }
-
+#[derive(Deserialize, Debug, Validate)]
+pub struct QueryForm {
+    pub page: Option<i32>,
+    pub appid: Option<i32>,
+}
 #[cfg(test)]
 mod tests {
     use super::*;

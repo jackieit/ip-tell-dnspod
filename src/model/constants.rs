@@ -13,3 +13,11 @@ pub struct RespMsg {
     pub code: Option<i32>,
     pub message: String,
 }
+
+///分页数据
+#[derive(Debug, Serialize)]
+pub struct Pagination<T> {
+    pub count: i32,
+    pub page: i32,
+    pub data: Vec<T>,
+}

@@ -1,4 +1,4 @@
-use std::{ sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     error::ItdResult,
@@ -6,10 +6,10 @@ use crate::{
         constants::RespMsg,
         app::{AppForm, AppItem, AppModel, StatusForm},
     },
-    web::middleware::{auth::UserIdentify, validate::ValidatedData},
+    web::middleware::validate::ValidatedData,
     AppState,
 };
-use axum::{extract::{State,Path}, routing::{post,put,delete}, Extension, Json, Router};
+use axum::{extract::{State,Path}, routing::{post,put,delete}, Json, Router};
 
 pub fn create_route() -> Router<Arc<AppState>> {
     Router::new()

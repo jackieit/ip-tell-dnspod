@@ -2,7 +2,6 @@ use crate::add_conn;
 use crate::error::ItdResult;
 use crate::model::constants::RespMsg;
 use crate::utils::encrypt_data;
-use crate::web::routes::app;
 
 use axum::Json;
 use chrono::Local;
