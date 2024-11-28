@@ -147,8 +147,8 @@ impl<'db> PodAction<'db> {
     /// * `ttl` - 有效期
     pub async fn create_record(
         &self,
-        domain: &str,
         hostname: &str,
+        domain: &str,
         record_type: &str,
         ip: &str,
         ttl: i32,

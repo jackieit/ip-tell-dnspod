@@ -1,4 +1,5 @@
-use crate::add_conn;
+use crate::err;
+use crate::{add_conn, dnspod::action::PodAction};
 use crate::error::ItdResult;
 use axum::Json;
 use chrono::NaiveDateTime;
@@ -116,10 +117,12 @@ impl<'db> Records<'db> {
             ip,
             ip_type,
             weight,
-            record_id,
+            record_id:_,
             ttl,
         } = payload;
-
+        let action = PodAction::new(self.db, appid).await?;
+        let new_ip = ip.clone().unwrap();
+        let record_id = action.create_record( &host, &domain,&ip_type, &new_ip, ttl).await?;
         let result = sqlx::query!(
             r#"
             INSERT INTO user_domain (appid,host,domain,ip,ip_type,weight,record_id,ttl)
@@ -136,6 +139,7 @@ impl<'db> Records<'db> {
         )
         .execute(self.db)
         .await?;
+        
         Ok(result.last_insert_rowid())
     }
     /// update record
@@ -150,7 +154,10 @@ impl<'db> Records<'db> {
             record_id,
             ttl,
         } = payload;
-
+        let action = PodAction::new(self.db, appid).await?;
+        let new_ip = ip.clone().unwrap();
+        action.modify_record(&host, &domain,record_id.unwrap(), &ip_type, &new_ip, ttl).await?;
+        
         let result = sqlx::query!(r#"UPDATE user_domain SET appid = ?, host = ?, domain = ?, ip = ?, ip_type = ?, weight = ?, record_id = ?, ttl = ? WHERE id = ?"#,
             appid,
             host,
@@ -167,6 +174,13 @@ impl<'db> Records<'db> {
     }
     /// delete record
     pub async fn delete_record(&self, record_id: i64) -> ItdResult<u64> {
+        let rs = self.get_record(record_id).await?;
+        if rs.is_none() {
+            return err!("Record not found");
+        }
+        let rs = rs.unwrap();
+        let action = PodAction::new(self.db, rs.appid).await?;
+        action.delete_record(&rs.domain,rs.record_id).await?;
         let result = sqlx::query!(r#"delete from user_domain where record_id = ?"#, record_id)
             .execute(self.db)
             .await?;
@@ -174,12 +188,12 @@ impl<'db> Records<'db> {
     }
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate,Clone)]
 pub struct RecordForm {
     pub appid: i32,
     pub host: String,
     pub domain: String,
-    pub ip: String,
+    pub ip: Option<String>,
     pub ip_type: String,
     pub weight: Option<i32>,
     pub record_id: Option<i32>,
@@ -208,7 +222,7 @@ mod tests {
             appid: 1,
             host: "itd".to_string(),
             domain: "guoran.cn".to_string(),
-            ip: ip.clone(),
+            ip: Some(ip.clone()),
             ip_type: "A".to_string(),
             weight: None,
             record_id: Some(record_id),
