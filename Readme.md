@@ -4,6 +4,12 @@
 2. 基于api管理提供Web管理界面。
 3. 基于DNS自动管理letsencrypt免费证书。
 4. 获取的免费证书自动布置到 Nginx、IIS、Apache
+5. 获取的免费证书自动部署到 阿里云OSS
+
+## done
+1. dnspod 域名解析本地及远程管理
+2. 获取本机对外的ipv4 及ipv6地址
+3. 基本功能可运行
 
 ## 介绍
 IpTellDnspod是一款创新性的工具，它巧妙地监听本地IPv4及IPv6地址的任何变动，并据此自动同步更新DNSPOD平台上的域名解析记录。借助DNSPOD最新的3.0版本API，我们确保了与服务的无缝集成与高效通信。
@@ -13,43 +19,3 @@ IpTellDnspod是一款创新性的工具，它巧妙地监听本地IPv4及IPv6地
 IpTellDnspod系统由两部分组成：一个强大的本地服务组件和一个直观的Web管理界面。本地服务组件负责实时监控地址变动，并即时触发更新操作；而Web管理界面则提供了便捷的用户和域名配置管理工具，让用户可以轻松管理自己的域名和账户信息。
 
 值得一提的是，IpTellDnspod基于Rust语言开发，实现了真正的跨平台兼容性。只需一个二进制运行文件和一个数据库文件，用户即可轻松安装并运行我们的系统，无需复杂的配置或依赖项。
-
-##  数据库SQLite
-
-创建数据库文件
-
-```sql
-CREATE TABLE "user" (
-  "id" integer PRIMARY KEY AUTOINCREMENT,
-  "username" varchar(255) NOT NULL,
-  "password" varchar(255) NOT NULL,
-  "created_at" datetime DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" datetime DEFAULT CURRENT_TIMESTAMP,
-  "status" tinyint(1) DEFAULT 1
-);
-CREATE TABLE "user_apps" (
-  "id" integer PRIMARY KEY AUTOINCREMENT,
-  "uid" integer NOT NULL,
-  "title" varchar(255) NOT NULL,
-  "appid" integer NOT NULL,
-  "secret" varchar(255) NOT NULL,
-  "created_at" datetime DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" datetime DEFAULT CURRENT_TIMESTAMP,
-  "status" tinyint(1) DEFAULT 1
-);
-
-CREATE TABLE "user_domain" (
-  "id" integer PRIMARY KEY AUTOINCREMENT,
-  "appid" integer NOT NULL,
-  "host" varchar(255) NOT NULL,
-  "domain" varchar(255) NOT NULL,
-  "ip_type" varchar(255) DEFAULT 1,
-  "ip" varchar(255) NOT NULL,
-  "record_id" integer NOT NULL,
-  "weight" integer DEFAULT 1,
-  "ttl" integer DEFAULT 600
-  "created_at" datetime DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" datetime DEFAULT CURRENT_TIMESTAMP,
-);
-
-```
