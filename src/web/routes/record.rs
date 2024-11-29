@@ -36,8 +36,22 @@ async fn create_record(
         let app_state = state.clone();
         let ip_state = app_state.ip_state.lock().unwrap();
         let ip_value = match payload.ip_type.as_str() {
-          "A" => ip_state.ipv4.clone().unwrap(),
-          "AAAA" => ip_state.ipv6.clone().unwrap(),
+          "A" => {
+            let ip = ip_state.ipv4.clone();
+            if ip.is_some() {
+              ip.unwrap()
+            } else {
+              return err!("No ip address found");
+            }
+          },
+          "AAAA" => {
+            let ip = ip_state.ipv6.clone();
+            if ip.is_some() {
+              ip.unwrap()
+            } else {
+              return err!("No ip address found");
+            }
+          },
           _ => {
               return err!("Invalid ip type");
            }

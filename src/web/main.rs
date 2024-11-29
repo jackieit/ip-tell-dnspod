@@ -117,6 +117,7 @@ async fn shutdown_signal() {
     println!("signal received, starting graceful shutdown");
 }
 // only used for test
+#[allow(dead_code)]
 pub async fn test_app() -> Router {
     let app_state = crate::get_app_state().await;
     let mut app = create_app(app_state).await;

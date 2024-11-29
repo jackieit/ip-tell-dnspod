@@ -1,5 +1,4 @@
 use crate::{BoxFuture, IpState};
-use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 
 pub mod ipv6_net;
@@ -13,5 +12,5 @@ pub enum IpType {
 
 pub trait IpAddrExt {
     fn get_ip(&self, ip_state: Arc<Mutex<IpState>>) -> BoxFuture<bool>;
-    fn get_record_type(&self, ip: String) -> IpAddr;
+    //fn get_record_type(&self, ip: String) -> IpAddr;
 }

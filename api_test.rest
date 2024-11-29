@@ -1,0 +1,29 @@
+
+@host = http://localhost:3310/v1
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjEsImV4cCI6MTczMzQ4OTEzN30.c_Q6opb9H3INx0T3IYNg9GJeFWyFt86isQlgJ71ztcw
+@contentType = application/json
+
+### @name login
+POST {{host}}/user/signin HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "username": "admin",
+  "password": "Abc@1234"
+}
+
+### @name createRecord
+POST {{host}}/record HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+    "appid": 1,
+    "host": "itd",
+    "domain": "guoran.cn",
+    "ip":null,
+    "ip_type":"A",
+    "weight": 1,
+    "record_id":null,
+    "ttl": 600
+}

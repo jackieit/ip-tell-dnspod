@@ -83,10 +83,7 @@ impl IpAddrExt for Ipv6Net {
             Ok(false)
         })
     }
-    fn get_record_type(&self, ip: String) -> IpAddr {
-        let ip: IpAddr = ip.parse().unwrap();
-        ip
-    }
+    
 }
 
 #[cfg(test)]

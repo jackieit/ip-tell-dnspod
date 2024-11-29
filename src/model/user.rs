@@ -19,7 +19,7 @@ pub struct UserRow {
 
 pub struct UserPasswordRow {
     pub password: String,
-    pub username: String,
+    //pub username: String,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -99,7 +99,7 @@ impl<'db> UserModel<'db> {
         // find user by id
         let user_row = sqlx::query_as!(
             UserPasswordRow,
-            r#"SELECT password,username FROM user WHERE id = ?"#,
+            r#"SELECT password FROM user WHERE id = ?"#,
             uid
         )
         .fetch_one(self.db)

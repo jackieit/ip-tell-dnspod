@@ -4,8 +4,8 @@ use crate::error::ItdResult;
 use serde::Deserialize;
 use tracing::info;
 
-pub struct PodAction<'db> {
-    db: &'db sqlx::Pool<sqlx::Sqlite>,
+pub struct PodAction {
+    //db: &'db sqlx::Pool<sqlx::Sqlite>,
     //appid: i32,
     secret_id: String,
     secret_key: String,
@@ -16,15 +16,15 @@ pub struct PodAction<'db> {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ResponseError {
-    pub code: String,
+    //pub code: String,
     pub message: String,
 }
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct DomainItem {
-    pub domain_id: i32,
+    //pub domain_id: i32,
     pub name: String,
-    pub status: String,
+    //pub status: String,
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -36,15 +36,15 @@ pub struct DomainListResponse {
 #[serde(rename_all = "PascalCase")]
 pub struct RecordItem {
     pub record_id: i32,
-    pub line: String,
-    pub line_id: String,
+    //pub line: String,
+    //pub line_id: String,
 
     pub name: String,
     pub r#type: String,
-    pub updated_on: String,
-    pub value: String,
-    pub weight: Option<String>,
-    pub status: String,
+    //pub updated_on: String,
+    //pub value: String,
+    //pub weight: Option<String>,
+    //pub status: String,
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -64,9 +64,9 @@ pub struct Response<T> {
     pub response: T,
 }
 
-impl<'db> PodAction<'db> {
+impl PodAction {
     /// 创建一个PodAction实例
-    pub async fn new(db: &'db sqlx::Pool<sqlx::Sqlite>, appid: i32) -> ItdResult<Self> {
+    pub async fn new<'db>(db: &'db sqlx::Pool<sqlx::Sqlite>, appid: i32) -> ItdResult<Self> {
         let result = sqlx::query_as::<_, (String, String)>(
             "select secret_id,secret_key from user_apps where id = ?",
         )
@@ -78,7 +78,7 @@ impl<'db> PodAction<'db> {
         }
         let (secret_id, secret_key) = result.unwrap();
         Ok(PodAction {
-            db,
+           
             secret_id: secret_id,
             secret_key: secret_key,
             domain_list: vec![],
@@ -239,6 +239,7 @@ impl<'db> PodAction<'db> {
     /// # Argments
     /// * domain: 域名 全域名形式带主机名 如 host.example.com
     /// * domain_type: 域名类型 1: example.com example.cn 2: example.com.cn example.net.cn
+    #[allow(dead_code)]
     pub fn get_hostname_from_domain(&self, domain: &str, domain_type: i8) -> Option<String> {
         let parts: Vec<&str> = domain.split('.').collect();
 

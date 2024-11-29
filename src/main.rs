@@ -43,6 +43,7 @@ async fn main() {
     let app_state = get_app_state().await;
     let ip_state = app_state.ip_state.clone();
     let db = app_state.db.clone();
+    
     tokio::spawn(async move {
         loop {
             // Do some work here
@@ -128,7 +129,7 @@ async fn main() {
                 Err(e) => error!("Error: {}", e),
             }
             // Sleep for 1 second between iterations
-            thread::sleep(Duration::from_secs(10));
+            thread::sleep(Duration::from_secs(2));
         }
     });
     //handle.await.unwrap();

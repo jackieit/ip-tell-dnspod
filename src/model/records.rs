@@ -94,6 +94,7 @@ impl<'db> Records<'db> {
         Ok(record)
     }
     /// get one recored by domain
+    #[allow(dead_code)]
     pub async fn get_record_by_domain(&self, domain: &str) -> ItdResult<Vec<Record>> {
         let record_list: Vec<Record> = sqlx::query_as(
             r#"SELECT 
@@ -122,7 +123,7 @@ impl<'db> Records<'db> {
         } = payload;
         let action = PodAction::new(self.db, appid).await?;
         let new_ip = ip.clone().unwrap();
-        let record_id = action.create_record( &host, &domain,&ip_type, &new_ip, ttl).await?;
+        let record_id = action.add_domain( &host, &domain,&ip_type, &new_ip, ttl).await?;
         let result = sqlx::query!(
             r#"
             INSERT INTO user_domain (appid,host,domain,ip,ip_type,weight,record_id,ttl)
