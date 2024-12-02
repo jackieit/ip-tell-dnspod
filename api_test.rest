@@ -27,3 +27,29 @@ Authorization: Bearer {{token}}
     "record_id":null,
     "ttl": 600
 }
+
+### @name updateRecord
+PUT {{host}}/record/3 HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+    "appid": 1,
+    "host": "itd",
+    "domain": "guoran.cn",
+    "ip":null,
+    "ip_type":"A",
+    "weight": 1,
+    "record_id":1904088010,
+    "ttl": 600
+}
+
+### @name deleteRecord
+DELETE {{host}}/record/3 HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+### @name listRecord
+GET {{host}}/records HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}

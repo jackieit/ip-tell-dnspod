@@ -4,9 +4,11 @@ use argon2::{
     Argon2,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 
 use crate::error::{ItdError, ItdResult};
+use crate::{ AppState,err};
+
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -167,7 +169,32 @@ pub fn log_setup() {
         .with_writer(logfile.and(stdout))
         .init();
 }
-
+/// extract ip from app_state
+pub fn extract_ip(ip_type: &str, app_state: Arc<AppState>) -> ItdResult<String> {
+    let ip_state = app_state.ip_state.lock().unwrap();
+        let ip_value = match ip_type {
+          "A" => {
+            let ip = ip_state.ipv4.clone();
+            if ip.is_some() {
+              ip.unwrap()
+            } else {
+              return err!("No ipv4 address found");
+            }
+          },
+          "AAAA" => {
+            let ip = ip_state.ipv6.clone();
+            if ip.is_some() {
+              ip.unwrap()
+            } else {
+              return err!("No ipv6 address found");
+            }
+          },
+          _ => {
+              return err!("Invalid ip type");
+           }
+        };
+        Ok(ip_value)
+}
 #[macro_export]
 macro_rules! add_conn {
     ($struct_name:ident) => {

@@ -27,6 +27,7 @@ pub struct Record {
     pub secret_id: Option<String>,
     pub secret_key: Option<String>,
 }
+
 impl<'db> Records<'db> {
     /// get all records
  
@@ -49,17 +50,25 @@ impl<'db> Records<'db> {
         let sql_base = r#"SELECT 
                      i.id ,appid,host,domain,ip_type,ip,weight,ttl,i.created_at,i.updated_at
                      ,i.record_id
-                     ,ii.secret_id,ii.secret_key
+                     ,NULL as secret_id, NULL as secret_key
                      FROM user_domain i left join user_apps ii on i.appid=ii.id "#;
         let sql_total = if let Some(appid) = appid {
             format!("{} where i.appid= {}",sql_base,appid)
         }else{
             sql_base.to_string()
         };
-        let total: i32 = sqlx::query_scalar(&sql_total)
+        let total: Option<_> = sqlx::query_scalar(&sql_total)
         .bind(appid)
-        .fetch_one(self.db)
+        .fetch_optional(self.db)
         .await?;
+        if total.is_none() {
+            return Ok(Json(Pagination {
+                count: 0,
+                page,
+                data: vec![],
+            }));
+        }
+        let total = total.unwrap();
         let sql_query = if let Some(appid) = appid {
             format!("{} where i.appid={} limit {},10",sql_base,appid,offset)
         }else{
@@ -78,17 +87,17 @@ impl<'db> Records<'db> {
         Ok(pagination)
     }
     /// get one record
-    pub async fn get_record(&self, record_id: i64) -> ItdResult<Option<Record>> {
+    pub async fn get_record(&self, id: i64) -> ItdResult<Option<Record>> {
         let record: Option<Record> = sqlx::query_as(
             r#"SELECT 
              i.id ,appid,host,domain,ip_type,ip,weight,ttl,i.created_at,i.updated_at
              ,i.record_id
-             ,ii.secret_id,ii.secret_key
+             ,NULL as secret_id, NULL as secret_key
              FROM user_domain i left join user_apps ii on i.appid=ii.id
              where i.id=?
             "#,
         )
-        .bind(record_id)
+        .bind(id)
         .fetch_optional(self.db)
         .await?;
         Ok(record)
@@ -100,7 +109,7 @@ impl<'db> Records<'db> {
             r#"SELECT 
              i.id ,appid,host,domain,ip_type,ip,weight,ttl,i.created_at,i.updated_at
              ,i.record_id
-             ,ii.secret_id,ii.secret_key
+             ,NULL as secret_id,NULL as secret_key
              FROM user_domain i left join user_apps ii on i.appid=ii.id
              where i.domain=?
             "#,
@@ -121,6 +130,17 @@ impl<'db> Records<'db> {
             record_id:_,
             ttl,
         } = payload;
+        // check if record exists
+        let record_exists = sqlx::query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM user_domain WHERE host=? AND domain=?)"#,
+            host,
+            domain
+        )
+        .fetch_one(self.db)
+        .await?;
+        if record_exists > 0  {
+            return err!("已经添加过此域名，请修改记录实现");
+        };
         let action = PodAction::new(self.db, appid).await?;
         let new_ip = ip.clone().unwrap();
         let record_id = action.add_domain( &host, &domain,&ip_type, &new_ip, ttl).await?;
@@ -155,6 +175,9 @@ impl<'db> Records<'db> {
             record_id,
             ttl,
         } = payload;
+        if record_id.is_none() {
+            return err!("缺少原始record_id!");
+        }
         let action = PodAction::new(self.db, appid).await?;
         let new_ip = ip.clone().unwrap();
         action.modify_record(&host, &domain,record_id.unwrap(), &ip_type, &new_ip, ttl).await?;
@@ -174,15 +197,15 @@ impl<'db> Records<'db> {
         Ok(result.rows_affected())
     }
     /// delete record
-    pub async fn delete_record(&self, record_id: i64) -> ItdResult<u64> {
-        let rs = self.get_record(record_id).await?;
+    pub async fn delete_record(&self, id: i64) -> ItdResult<u64> {
+        let rs = self.get_record(id).await?;
         if rs.is_none() {
             return err!("Record not found");
         }
         let rs = rs.unwrap();
         let action = PodAction::new(self.db, rs.appid).await?;
         action.delete_record(&rs.domain,rs.record_id).await?;
-        let result = sqlx::query!(r#"delete from user_domain where record_id = ?"#, record_id)
+        let result = sqlx::query!(r#"delete from user_domain where id = ?"#, id)
             .execute(self.db)
             .await?;
         Ok(result.rows_affected())

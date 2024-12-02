@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    err, error::ItdResult, model::{
+    error::ItdResult, model::{
         constants::{Pagination, RespMsg},
         records::{QueryForm, Record, RecordForm, Records},
-    }, web::middleware::validate::ValidatedData, AppState
+    }, utils::extract_ip, web::middleware::validate::ValidatedData, AppState
 };
 use axum::{extract::{Path, Query, State}, routing::{ delete, get, post, put }, Json, Router};
 
@@ -31,31 +31,11 @@ async fn create_record(
 ) -> ItdResult<Json<Option<Record>>> {
     let record_model = Records::new(&state.db);
     let mut data = payload.clone();
-      if payload.ip.is_none() {
+    if payload.ip.is_none() {
          
         let app_state = state.clone();
-        let ip_state = app_state.ip_state.lock().unwrap();
-        let ip_value = match payload.ip_type.as_str() {
-          "A" => {
-            let ip = ip_state.ipv4.clone();
-            if ip.is_some() {
-              ip.unwrap()
-            } else {
-              return err!("No ip address found");
-            }
-          },
-          "AAAA" => {
-            let ip = ip_state.ipv6.clone();
-            if ip.is_some() {
-              ip.unwrap()
-            } else {
-              return err!("No ip address found");
-            }
-          },
-          _ => {
-              return err!("Invalid ip type");
-           }
-      };
+        //let ip_state = app_state.ip_state.lock().unwrap();
+        let ip_value =  extract_ip(&payload.ip_type,app_state)?;
       data.ip = Some(ip_value);
     }
     
@@ -80,7 +60,15 @@ async fn update_record(
     ValidatedData(payload): ValidatedData<RecordForm>,
 ) -> ItdResult<Json<Option<Record>>> {
     let record_model = Records::new(&state.db);
-    let _ = record_model.update_record(id, payload).await?;
+    let mut data = payload.clone();
+    if payload.ip.is_none() {
+         
+      let app_state = state.clone();
+      //let ip_state = app_state.ip_state.lock().unwrap();
+      let ip_value =  extract_ip(&payload.ip_type,app_state)?;
+      data.ip = Some(ip_value);
+    }
+    let _ = record_model.update_record(id, data).await?;
     let record = record_model.get_record(id).await?;
     //let record = record.unwrap();
     Ok(Json(record))

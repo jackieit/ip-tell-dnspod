@@ -122,18 +122,18 @@ impl PodAction {
         if !exists {
             return err!("主域名不存在，请先在DNSPod上添加主域名");
         }
-        let resords = self.find_records(&domain).await?;
+        let resords = self.find_records(domain).await?;
         for record in resords {
             //已经存在需要更新域名,注意其它的记录类型会被替换为A类型
             if record.name == host && (record.r#type == "A" || record.r#type == "AAAA") {
-                self.modify_record(host, &domain, record.record_id, record_type, ip, ttl)
+                self.modify_record(host, domain, record.record_id, record_type, ip, ttl)
                     .await?;
                 return Ok(record.record_id);
             }
         }
         // 添加记录
         let result = self
-            .create_record(&domain, host, record_type, ip, ttl)
+            .create_record(&host, domain, record_type, ip, ttl)
             .await?;
         Ok(result)
     }
