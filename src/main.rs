@@ -1,10 +1,11 @@
-use crate::dnspod::action::PodAction;
+//use crate::dnspod::action::PodAction;
 use crate::error::ItdResult;
-use crate::ipaddr::{ipv6_net::Ipv6Net, IpAddrExt, IpType};
-use crate::model::records::Records;
+//use crate::ipaddr::{ipv6_net::Ipv6Net, IpAddrExt, IpType};
+//use crate::model::records::Records;
 use crate::utils::log_setup;
 use crate::web::main::http_server;
 
+use tokio::sync::mpsc;
 //use model::app;
 use tracing::{error, info};
 
@@ -14,7 +15,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-
+use crate::ipaddr::watch::task;
 mod dnspod;
 mod error;
 mod ipaddr;
@@ -39,101 +40,31 @@ pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = ItdResult<T>> + Send + '
 async fn main() {
     log_setup();
     info!("Welcome to Ip Tell DnsPod!");
-    let ipaddr = Ipv6Net::new("test-ipv6.com".to_string(), IpType::V4);
+    
     let app_state = get_app_state().await;
     let ip_state = app_state.ip_state.clone();
     let db = app_state.db.clone();
-    
+    let (tx, mut rx) = mpsc::channel::<()>(1);
     tokio::spawn(async move {
         loop {
-            // Do some work here
-            info!("Thread is working...");
-            let ip = ipaddr.get_ip(ip_state.clone()).await;
-            match ip {
-                Ok(ip_changed) => {
-                    if ip_changed {
-                        let record_model = Records::new(&db);
-                        let lists = record_model.get_record_list().await;
-                        //println!("Record list: {:?}", lists);
-                        match lists {
-                            Err(e) => {
-                                error!("Error: {}", e);
-                            }
-                            Ok(lists) => {
-                                if lists.len() == 0 {
-                                    info!("No record found!");
-                                    continue;
-                                }
-                                for item in lists {
-                                    let ip_value = match item.ip_type.as_str() {
-                                        "A" => ip_state.lock().unwrap().ipv4.clone().unwrap(),
-                                        "AAAA" => ip_state.lock().unwrap().ipv6.clone().unwrap(),
-                                        _ => {
-                                            info!("Invalid ip type! {}", item.ip_type);
-                                            continue;
-                                        }
-                                    };
-                                    let domain = format!("{}.{}", item.host, item.domain);
-                                    info!("Update record domain: {} ,ip: {}", domain, &ip_value);
-                                    //let query_db = Arc::clone(&db);
-                                    let result = sqlx::query!(
-                                        r#"UPDATE user_domain SET ip = ? WHERE id = ?"#,
-                                        ip_value,
-                                        item.id
-                                    )
-                                    .execute(&db)
-                                    .await;
-                                    match result {
-                                        Err(e) => {
-                                            error!("Update {} Error: {}", domain, e);
-                                        }
-                                        Ok(_) => {
-                                            let action = PodAction::new(&db, item.appid).await;
-                                            if action.is_err() {
-                                                error!(
-                                                    "Update {} Error: {}",
-                                                    domain,
-                                                    action.err().unwrap()
-                                                );
-                                                continue;
-                                            }
-                                            let action = action.unwrap();
-
-                                            let result = action
-                                                .modify_record(
-                                                    &item.host,
-                                                    &item.domain,
-                                                    item.record_id,
-                                                    &item.ip_type,
-                                                    &ip_value,
-                                                    600,
-                                                )
-                                                .await;
-                                            if result.is_err() {
-                                                error!(
-                                                    "Update {} Error: {}",
-                                                    domain,
-                                                    result.err().unwrap()
-                                                );
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        info!("IP not changed!");
-                    }
-                }
-                Err(e) => error!("Error: {}", e),
-            }
-            // Sleep for 1 second between iterations
-            thread::sleep(Duration::from_secs(2));
+          //crate::ipaddr::watch::thread_run(db.clone(), ip_state, ipaddr);
+          let handle = task(db.clone(), ip_state.clone());
+          if let Err(err) = handle.await {
+            error!("Task failed: {}", err);
+          } else {
+            info!("Task completed successfully");
+          }
+          thread::sleep(Duration::from_secs(10));
         }
+      }); 
+    tokio::spawn(async move {
+        http_server(app_state.clone()).await;
+        let _ = tx.send(()); // Signal when the server stops (optional)
     });
+    rx.recv().await.expect("Failed to receive from channel");
+    info!("Server has completed.");
     //handle.await.unwrap();
-    http_server(app_state.clone()).await;
+    
 }
 pub async fn get_app_state() -> Arc<AppState> {
     let ip_state = Arc::new(Mutex::new(IpState {

@@ -102,7 +102,6 @@ pub fn decode_token(token: &str) -> ItdResult<Claims> {
 }
 
 /// encrypt string with aes
-#[allow(dead_code)]
 pub fn encrypt_data(data: Vec<u8>) -> ItdResult<String> {
     let mch_key = STANDARD.decode(&AES_KEY)?;
     let mch_key = mch_key.as_slice();
@@ -129,7 +128,6 @@ pub fn encrypt_data(data: Vec<u8>) -> ItdResult<String> {
 }
 
 /// decrypt base64 data to Vec<u8>
-#[allow(dead_code)]
 pub fn decrypt_data(data: &str) -> ItdResult<Vec<u8>> {
     let mch_key = STANDARD.decode(&AES_KEY)?;
 
@@ -149,7 +147,6 @@ pub fn decrypt_data(data: &str) -> ItdResult<Vec<u8>> {
     Ok(pt.to_vec())
 }
 /// decrypt base64 data to string
-#[allow(dead_code)]
 pub fn decrypt_to_str(data: &str) -> ItdResult<String> {
     let data = decrypt_data(data)?;
     let data = String::from_utf8(data.into())?;

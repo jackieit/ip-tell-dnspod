@@ -4,7 +4,7 @@ use sha2::{Sha256, Digest};
 use hex;
 //use time::OffsetDateTime;
 //use time::macros::format_description;
-use crate::error::{ItdResult,ItdError};
+use crate::error::{ItdError, ItdResult};
 use serde::de::DeserializeOwned;
 use hmac::{Hmac, Mac};
 
@@ -21,6 +21,7 @@ impl Client {
         let now = chrono::Utc::now();
         let today = now.format("%Y-%m-%d").to_string();
         let timestamp = now.timestamp().to_string();
+        
         Client {
             secret_id: secret_id,
             secret_key: secret_key,

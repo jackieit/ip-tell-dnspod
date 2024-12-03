@@ -10,6 +10,8 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug, Clone)]
 pub struct Ipv6Net {
     pub url: String,
+    //pub frequency: Option<u32>,
+    //pub ip_types: Vec<IpType>,
     // pub ip: Option<IpAddr>,
 }
 

@@ -2,6 +2,7 @@ use crate::{BoxFuture, IpState};
 use std::sync::{Arc, Mutex};
 
 pub mod ipv6_net;
+pub mod watch;
 
 const REQUEST_AGENET: &str = "Ip-Tell-DNS/v0.1";
 #[derive(Debug, Clone)]

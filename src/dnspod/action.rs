@@ -1,6 +1,7 @@
 use crate::dnspod::api_client::Client;
 use crate::err;
 use crate::error::ItdResult;
+use crate::utils::decrypt_to_str;
 use serde::Deserialize;
 use tracing::info;
 
@@ -77,6 +78,8 @@ impl PodAction {
             return err!("appid not found");
         }
         let (secret_id, secret_key) = result.unwrap();
+        let secret_id = decrypt_to_str(&secret_id)?;
+        let secret_key = decrypt_to_str(&secret_key)?;
         Ok(PodAction {
            
             secret_id: secret_id,

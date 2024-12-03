@@ -217,9 +217,12 @@ pub struct RecordForm {
     pub appid: i32,
     pub host: String,
     pub domain: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ip: Option<String>,
     pub ip_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub record_id: Option<i32>,
     pub ttl: i32,
 }
