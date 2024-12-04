@@ -13,15 +13,15 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace,
 };
+use axum::{extract::connect_info::MockConnectInfo, Router};
+use tracing::info;
 
 use crate::{
     web::middleware::{auth::auth, header::propagate_header, log_bearer::make_span_with},
     AppState,
 };
 
-use axum::{extract::connect_info::MockConnectInfo, Router};
 
-use tracing::info;
 
 pub async fn create_app(app_state: Arc<AppState>) -> Router {
     let root = format!("{}/wwwroot", env!("CARGO_MANIFEST_DIR"));

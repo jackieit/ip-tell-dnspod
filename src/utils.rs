@@ -4,18 +4,22 @@ use argon2::{
     Argon2,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
-
-use crate::error::{ItdError, ItdResult};
-use crate::{ AppState,err};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
-//use tracing_subscriber::{fmt, layer::SubscriberExt};
-use crate::model::constants::{AES_KEY, JWT_SECRET};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
+
+//use tracing_subscriber::{fmt, layer::SubscriberExt};
+use crate::error::{ItdError, ItdResult};
+use crate::model::constants::{AES_KEY, JWT_SECRET};
+use crate::{err, AppState};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: i64,
@@ -169,28 +173,28 @@ pub fn log_setup() {
 /// extract ip from app_state
 pub async fn extract_ip(ip_type: &str, app_state: Arc<AppState>) -> ItdResult<String> {
     let ip_state = app_state.ip_state.read().await;
-        let ip_value = match ip_type {
-          "A" => {
+    let ip_value = match ip_type {
+        "A" => {
             let ip = ip_state.ipv4.clone();
             if ip.is_some() {
-              ip.unwrap()
+                ip.unwrap()
             } else {
-              return err!("No ipv4 address found");
+                return err!("No ipv4 address found");
             }
-          },
-          "AAAA" => {
+        }
+        "AAAA" => {
             let ip = ip_state.ipv6.clone();
             if ip.is_some() {
-              ip.unwrap()
+                ip.unwrap()
             } else {
-              return err!("No ipv6 address found");
+                return err!("No ipv6 address found");
             }
-          },
-          _ => {
-              return err!("Invalid ip type");
-           }
-        };
-        Ok(ip_value)
+        }
+        _ => {
+            return err!("Invalid ip type");
+        }
+    };
+    Ok(ip_value)
 }
 #[macro_export]
 macro_rules! add_conn {
@@ -209,8 +213,8 @@ macro_rules! add_conn {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::RngCore;
     use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use rand::RngCore;
 
     #[test]
     fn it_password_hash_works() {
@@ -220,7 +224,7 @@ mod tests {
     }
     #[test]
     fn generate_aes_key() {
-       // assert!(matches!(key_size, 16 | 24 | 32), "Invalid AES key size");
+        // assert!(matches!(key_size, 16 | 24 | 32), "Invalid AES key size");
         let mut key = vec![0u8; 16];
         rand::thread_rng().fill_bytes(&mut key[..]);
         let result = STANDARD.encode(key);
