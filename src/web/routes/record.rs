@@ -35,7 +35,7 @@ async fn create_record(
          
         let app_state = state.clone();
         //let ip_state = app_state.ip_state.lock().unwrap();
-        let ip_value =  extract_ip(&payload.ip_type,app_state)?;
+        let ip_value =  extract_ip(&payload.ip_type,app_state).await?;
       data.ip = Some(ip_value);
     }
     
@@ -65,7 +65,7 @@ async fn update_record(
          
       let app_state = state.clone();
       //let ip_state = app_state.ip_state.lock().unwrap();
-      let ip_value =  extract_ip(&payload.ip_type,app_state)?;
+      let ip_value =  extract_ip(&payload.ip_type,app_state).await?;
       data.ip = Some(ip_value);
     }
     let _ = record_model.update_record(id, data).await?;

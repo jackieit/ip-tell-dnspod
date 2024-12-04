@@ -167,8 +167,8 @@ pub fn log_setup() {
         .init();
 }
 /// extract ip from app_state
-pub fn extract_ip(ip_type: &str, app_state: Arc<AppState>) -> ItdResult<String> {
-    let ip_state = app_state.ip_state.lock().unwrap();
+pub async fn extract_ip(ip_type: &str, app_state: Arc<AppState>) -> ItdResult<String> {
+    let ip_state = app_state.ip_state.read().await;
         let ip_value = match ip_type {
           "A" => {
             let ip = ip_state.ipv4.clone();

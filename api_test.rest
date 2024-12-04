@@ -11,6 +11,29 @@ Content-Type: {{contentType}}
   "username": "admin",
   "password": "Abc@1234"
 }
+### @name createUser
+
+POST {{host}}/user/create HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "username": "test001",
+  "password": "Abc@1234",
+  "repassword": "Abc@1234"
+}
+### 添加一个DNSpod的应用 uid 字段为归属用户的ID
+### @name createApp
+POST {{host}}/app HTTP/1.1
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "uid": 1,
+  "title": "test app",
+  "secret_id": "test_secret_id",
+  "secret_key": "test_secret_key"
+}
 
 ### @name createRecord
 POST {{host}}/record HTTP/1.1

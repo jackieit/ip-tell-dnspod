@@ -5,14 +5,15 @@ use crate::error::ItdResult;
 use crate::utils::log_setup;
 use crate::web::main::http_server;
 
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc,RwLock};
+
 //use model::app;
 use tracing::{error, info};
 
 use sqlx::sqlite::SqlitePool;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use crate::ipaddr::watch::task;
@@ -32,7 +33,7 @@ pub struct IpState {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub db: SqlitePool,
-    pub ip_state: Arc<Mutex<IpState>>,
+    pub ip_state: Arc<RwLock<IpState>>,
 }
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = ItdResult<T>> + Send + 'a>>;
 
@@ -61,13 +62,13 @@ async fn main() {
         http_server(app_state.clone()).await;
         let _ = tx.send(()); // Signal when the server stops (optional)
     });
-    rx.recv().await.expect("Failed to receive from channel");
+    rx.recv().await;
     info!("Server has completed.");
     //handle.await.unwrap();
     
 }
 pub async fn get_app_state() -> Arc<AppState> {
-    let ip_state = Arc::new(Mutex::new(IpState {
+    let ip_state = Arc::new(RwLock::new(IpState {
         ipv4: None,
         ipv4_updated_at: 0,
         ipv6: None,
