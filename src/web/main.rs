@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 //use std::time::Duration;
 use tokio::signal;
+use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,
@@ -75,7 +76,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
                 ))),
         )
 }
-pub async fn http_server(app_state: Arc<AppState>) {
+pub async fn http_server(app_state: Arc<AppState>, handle: JoinHandle<()>) {
     println!("listening on {:?}", &app_state);
     let address = SocketAddr::from(([0, 0, 0, 0], 3310));
     let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
@@ -87,17 +88,17 @@ pub async fn http_server(app_state: Arc<AppState>) {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
+    .with_graceful_shutdown(shutdown_signal(handle))
     .await
     .expect("Failed to start server");
 }
-async fn shutdown_signal() {
+async fn shutdown_signal(handle: JoinHandle<()>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");
     };
-
+    handle.abort();
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())

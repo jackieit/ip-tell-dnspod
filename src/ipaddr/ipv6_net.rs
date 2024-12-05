@@ -50,6 +50,8 @@ impl Ipv6Net {
             .header("Content-Type", "application/json; charset=utf-8")
             .header("User-Agent", REQUEST_AGENET);
         let resp = req.send().await?;
+        //println!("res_text: {:?}", resp);
+
         let status_code = resp.status();
         let res_text = resp.text().await?;
         let res: serde_json::Value = serde_json::from_str(&res_text)?;
