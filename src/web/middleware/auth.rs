@@ -53,7 +53,11 @@ pub async fn auth(
         return Err(ItdError::from(AuthenticateError::WrongCredentials));
     }
 
-    let token_message = decode_token(&token).unwrap();
+    let token_message = decode_token(&token).map_err(|_e| ItdError::from(AuthenticateError::WrongCredentials))?;
+    //if token_message.is_err() {
+    //    return Err(ItdError::from(AuthenticateError::WrongCredentials));
+    //}
+    //let token_message = token_message.unwrap();
     let uid = token_message.sub;
 
     //println!("request auth check ===> {},{},{}", &path, &action, &token);

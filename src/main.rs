@@ -40,10 +40,8 @@ async fn main() {
     let app_state = get_app_state().await;
     let ip_state = app_state.ip_state.clone();
     let db = app_state.db.clone();
-    //let (tx, mut rx) = mpsc::channel::<()>(1);
     let handle = tokio::spawn(async move {
         loop {
-          //crate::ipaddr::watch::thread_run(db.clone(), ip_state, ipaddr);
           let handle = task(db.clone(), ip_state.clone());
           if let Err(err) = handle.await {
             error!("Task failed: {}", err);
@@ -51,14 +49,7 @@ async fn main() {
           thread::sleep(Duration::from_secs(10));
         }
     });
-    //tokio::spawn(async move {
     http_server(app_state.clone(),handle).await;
-       // handle.abort();
-       // let _ = tx.send(()); // Signal when the server stops (optional)
-    //});
-    //rx.recv().await;
-    //info!("Server has completed.");
-    //handle.await.unwrap();
     
 }
 pub async fn get_app_state() -> Arc<AppState> {
