@@ -54,26 +54,14 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
         .is_ok()
 }
 pub fn validate_password(password: &str) -> Result<(), validator::ValidationError> {
-    let length_and_characters = Regex::new(r"^[A-Za-z\d@$!%*?&#]{8,}$").unwrap();
-    if !length_and_characters.is_match(password) {
-        return Err(validator::ValidationError::new("密码码格式错误"));
-    }
-    // Check if the password contains at least one letter
-    let has_letter = Regex::new(r"[a-zA-Z]").unwrap();
-    if !has_letter.is_match(password) {
-        return Err(validator::ValidationError::new("需要至少一个字符"));
-    }
+    let password_regex = Regex::new(
+        r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
+    ).unwrap();
 
-    // Check if the password contains at least one digit
-    let has_digit = Regex::new(r"\d").unwrap();
-    if !has_digit.is_match(password) {
-        return Err(validator::ValidationError::new("需要至少一个数字"));
-    }
-
-    // Check if the password contains at least one special character
-    let has_special_char = Regex::new(r"[@$!%*?&#]").unwrap();
-    if !has_special_char.is_match(password) {
-        return Err(validator::ValidationError::new("需要至少一个特殊字符"));
+    if !password_regex.is_match(password) {
+        return Err(validator::ValidationError::new(
+            "密码必须至少8位，包含字母、数字和特殊字符(@$!%*?&#)"
+        ));
     }
     Ok(())
 }
