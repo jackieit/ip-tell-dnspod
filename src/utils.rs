@@ -173,28 +173,13 @@ pub fn log_setup() {
 /// extract ip from app_state
 pub async fn extract_ip(ip_type: &str, app_state: Arc<AppState>) -> ItdResult<String> {
     let ip_state = app_state.ip_state.read().await;
-    let ip_value = match ip_type {
-        "A" => {
-            let ip = ip_state.ipv4.clone();
-            if ip.is_some() {
-                ip.unwrap()
-            } else {
-                return err!("No ipv4 address found");
-            }
-        }
-        "AAAA" => {
-            let ip = ip_state.ipv6.clone();
-            if ip.is_some() {
-                ip.unwrap()
-            } else {
-                return err!("No ipv6 address found");
-            }
-        }
-        _ => {
-            return err!("Invalid ip type");
-        }
-    };
-    Ok(ip_value)
+    match ip_type {
+        "A" => ip_state.ipv4.clone()
+            .ok_or_else(|| ItdError::new("extract_ip".to_string(), "No ipv4 address found".to_string())),
+        "AAAA" => ip_state.ipv6.clone()
+            .ok_or_else(|| ItdError::new("extract_ip".to_string(), "No ipv6 address found".to_string())),
+        _ => err!("Invalid ip type")
+    }
 }
 #[macro_export]
 macro_rules! add_conn {

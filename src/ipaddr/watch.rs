@@ -23,20 +23,23 @@ pub async fn task(db: SqlitePool, ip_state: Arc<RwLock<IpState>>) -> ItdResult<(
         info!("IP changed!");
         let record_model = Records::new(&db);
         let lists = record_model.get_record_list().await?;
-
+        let ip_state = ip_state.read().await;
+        let ipv4 = ip_state.ipv4.clone();
+        let ipv6 = ip_state.ipv6.clone();
+        drop(ip_state); 
         for item in lists {
             let ip_value = match item.ip_type.as_str() {
                 "A" => {
                     if !ip_v4_changed {
                         continue;
                     }
-                    ip_state.read().await.ipv4.clone().unwrap()
+                    ipv4.clone().unwrap()
                 }
                 "AAAA" => {
                     if !ip_v6_changed {
                         continue;
                     }
-                    ip_state.read().await.ipv6.clone().unwrap()
+                    ipv6.clone().unwrap()
                 }
                 _ => {
                     info!("Invalid ip type! {}", item.ip_type);

@@ -2,9 +2,8 @@
 use http::{header, header::HeaderName, Method};
 use std::net::SocketAddr;
 use std::sync::Arc;
-//use std::time::Duration;
-use tokio::signal;
 use tokio::task::JoinHandle;
+use tokio::sync::broadcast::Receiver;
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,
@@ -15,7 +14,7 @@ use tower_http::{
     trace,
 };
 use axum::{extract::connect_info::MockConnectInfo, Router};
-use tracing::info;
+use tracing::{info,error};
 
 use crate::{
     web::middleware::{auth::auth, header::propagate_header, log_bearer::make_span_with},
@@ -76,7 +75,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
                 ))),
         )
 }
-pub async fn http_server(app_state: Arc<AppState>, handle: JoinHandle<()>) {
+pub async fn http_server(app_state: Arc<AppState>, background_task: JoinHandle<()>, mut shutdown_rx: Receiver<()>) {
     println!("listening on {:?}", &app_state);
     let address = SocketAddr::from(([0, 0, 0, 0], 3310));
     let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
@@ -84,39 +83,28 @@ pub async fn http_server(app_state: Arc<AppState>, handle: JoinHandle<()>) {
 
     info!("listening on {}", &address);
 
-    axum::serve(
+    let server = axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal(handle))
-    .await
-    .expect("Failed to start server");
-}
-async fn shutdown_signal(handle: JoinHandle<()>) {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
-    handle.abort();
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
+    .with_graceful_shutdown(async move {
+        // 等待关闭信号
+        let _ = shutdown_rx.recv().await;
+        info!("HTTP server received shutdown signal");
+    });
+    // 同时等待 server 和 background task
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        result = server => {
+            if let Err(e) = result {
+                error!("Server error: {}", e);
+            }
+        }
+        _ = background_task => {
+            info!("Background task completed");
+        }
     }
-
-    println!("signal received, starting graceful shutdown");
 }
+
 // only used for test
 #[allow(dead_code)]
 pub async fn test_app() -> Router {

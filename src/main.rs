@@ -1,11 +1,12 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 use tracing::{error, info};
 use sqlx::sqlite::SqlitePool;
 use tokio::sync::RwLock;
+use tokio::time::sleep;
+use tokio::sync::broadcast::channel;
 
 use crate::error::ItdResult;
 use crate::utils::log_setup;
@@ -40,16 +41,36 @@ async fn main() {
     let app_state = get_app_state().await;
     let ip_state = app_state.ip_state.clone();
     let db = app_state.db.clone();
-    let handle = tokio::spawn(async move {
-        loop {
-          let handle = task(db.clone(), ip_state.clone());
-          if let Err(err) = handle.await {
-            error!("Task failed: {}", err);
-          }
-          thread::sleep(Duration::from_secs(10));
+    let (shutdown_tx, shutdown_rx) = channel::<()>(1);
+    
+    let handle = tokio::spawn({
+        let mut rx = shutdown_tx.subscribe();
+        async move {
+            loop {
+                tokio::select! {
+                    _ = rx.recv() => {
+                        info!("Background task received shutdown signal");
+                        break;
+                    }
+                    _ = async {
+                        let handle = task(db.clone(), ip_state.clone());
+                        if let Err(err) = handle.await {
+                            error!("Task failed: {}", err);
+                        }
+                        sleep(Duration::from_secs(10)).await;
+                    } => {}
+                }
+            }
         }
     });
-    http_server(app_state.clone(),handle).await;
+    // 设置 ctrl-c 处理
+    tokio::spawn(async move {
+        if let Ok(_) = tokio::signal::ctrl_c().await {
+            info!("Received Ctrl+C, initiating shutdown");
+            let _ = shutdown_tx.send(());
+        }
+    });
+    http_server(app_state.clone(),handle, shutdown_rx).await;
     
 }
 pub async fn get_app_state() -> Arc<AppState> {

@@ -115,7 +115,7 @@ impl IpAddrExt for Ipv6Net {
                     let url = self.get_url(IpType::V6);
                     let ip = self.do_request(&url).await?;
                     let ip_str = Some(ip.to_string());
-                    if ip.is_ipv6() && data.ipv4 != ip_str {
+                    if ip.is_ipv6() && data.ipv6 != ip_str {
                         data.ipv6 = ip_str;
                         data.ipv6_updated_at = current_timestamp;
                         ip_state_changed.1 = true;
