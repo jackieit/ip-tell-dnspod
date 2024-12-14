@@ -1,7 +1,7 @@
 # rfc
 ## todo
 1. 基于Axum api管理
-2. 基于api管理提供Web管理界面。
+2. 基于api管理提供Web管理界面,基于yew框架
 3. 基于DNS自动管理letsencrypt免费证书。
 4. 获取的免费证书自动布署到 Nginx、IIS、Apache
 5. 获取的免费证书自动部署到 阿里云OSS
