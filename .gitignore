@@ -4,3 +4,5 @@
 dnspod.db
 /wwwroot/*
 /logs
+/yew-app/target
+/yew-app/dist
