@@ -2,6 +2,10 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 use yew_router::components::Link;
 
+use pages::user_login::UserLogin;
+
+pub mod pages;
+
 /// defined router
 #[derive(Routable, PartialEq, Eq, Clone, Debug)]
 pub enum Route {
@@ -25,7 +29,6 @@ pub enum Route {
 fn app() -> Html {
     html! {
         <>
-        <h1>{ "Hello World" }</h1>
         <BrowserRouter>
             <Switch<Route> render={switch} /> // <- must be child of <BrowserRouter>
         </BrowserRouter>
@@ -44,9 +47,7 @@ fn switch(route: Route) -> Html {
     match route {
         Route::UserLogin => html! {
             // Login page without layout
-            <div>
-                <h1>{ "Login Page" }</h1>
-            </div>
+           <UserLogin />
         },
         Route::Home => html! {
             <Layout>

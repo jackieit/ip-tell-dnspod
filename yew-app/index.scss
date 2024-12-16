@@ -1,0 +1,63 @@
+html,
+body {
+  font-family: "pingfang SC", helvetica neue, arial, hiragino sans gb,
+    microsoft yahei ui, microsoft yahei, simsun, "sans-serif";
+  font-size: 14px;
+  background: #ebecf0;
+}
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  &-panel {
+    width: 320px;
+    height: 320px;
+    padding: 40px;
+    background-color: #fff;
+    
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+    &-title {
+      font-size: 20px;
+      font-weight: 400;
+      text-align: center;
+      color: #0052d9;
+      border-bottom: 2px solid #0052d9;
+      width: 80px;
+      margin: 0 auto;
+
+    }
+    &-form {
+      margin-top: 40px;
+      &-item {
+        width: 100%;
+        &-input {
+          width: 100%;
+          height: 36px;
+          padding: 5px 0px;
+          border: none;
+          border-bottom: 1px solid #e3e6eb;
+          padding-bottom: 6px;
+          &:focus {
+            border-color: #0052d9;
+            outline: none;
+          }
+        }
+        &-button {
+          width: 100%;
+          height: 48px;
+          background-color: #0052d9;
+          color: #fff;
+          border: none;
+        }
+      }
+      &-button-area {
+        margin-top: 60px;
+        text-align: center;
+        
+      }
+    }
+  }
+}

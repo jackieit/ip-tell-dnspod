@@ -6,3 +6,4 @@ dnspod.db
 /logs
 /yew-app/target
 /yew-app/dist
+/yew-app/index.min.css
