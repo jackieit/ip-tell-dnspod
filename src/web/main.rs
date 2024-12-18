@@ -1,5 +1,5 @@
 //use axum_server::tls_rustls::RustlsConfig;
-use http::{header, header::HeaderName, Method};
+use http::{header, header::{HeaderName,HeaderValue}, Method};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -64,7 +64,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
                             Method::DELETE,
                             Method::OPTIONS,
                         ])
-                        //.allow_origin(app_env.allow_origins)
+                        .allow_origin(["http://127.0.0.1:8000".parse::<HeaderValue>().unwrap()])
                         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
                         .allow_credentials(true),
                     //.expose_headers([header::HeaderName::from_static("x-request-id")]),

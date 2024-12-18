@@ -10,7 +10,6 @@ use std::{
 };
 
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
@@ -54,13 +53,18 @@ pub fn verify_password(password: &str, hash: &str) -> bool {
         .is_ok()
 }
 pub fn validate_password(password: &str) -> Result<(), validator::ValidationError> {
-    let password_regex = Regex::new(
-        r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
-    ).unwrap();
+    if password.len() < 8 {
+        return Err(validator::ValidationError::new("密码长度至少为8位"));
+    }
 
-    if !password_regex.is_match(password) {
+    // Check for letter, number, and special character
+    let has_letter = password.chars().any(|c| c.is_alphabetic());
+    let has_number = password.chars().any(|c| c.is_numeric());
+    let has_special = password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c));
+
+    if !has_letter || !has_number || !has_special {
         return Err(validator::ValidationError::new(
-            "密码必须至少8位，包含字母、数字和特殊字符(@$!%*?&#)"
+            "密码必须包含字母、数字和特殊字符(@$!%*?&#)"
         ));
     }
     Ok(())

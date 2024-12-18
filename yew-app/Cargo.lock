@@ -1250,6 +1250,8 @@ dependencies = [
  "gloo-console 0.2.3",
  "gloo-net 0.6.0",
  "serde",
+ "serde_json",
+ "wasm-bindgen-futures",
  "web-sys",
  "yew",
  "yew-router",
