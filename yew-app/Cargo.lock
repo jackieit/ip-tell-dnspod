@@ -1247,7 +1247,7 @@ dependencies = [
 name = "yew-app"
 version = "0.1.0"
 dependencies = [
- "gloo-console 0.2.3",
+ "gloo-console 0.3.0",
  "gloo-net 0.6.0",
  "serde",
  "serde_json",

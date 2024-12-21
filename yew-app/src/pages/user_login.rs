@@ -1,22 +1,23 @@
+use gloo_console::log;
+use gloo_net::http::Request;
+use serde::Serialize;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{EventTarget, HtmlInputElement};
-use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
-use gloo_console as console;
-use gloo_net::http::Request;
-use serde::Serialize;  
 
 #[derive(Default, Clone, PartialEq, Serialize, Debug)]
 pub struct LoginForm {
     username: String,
     password: String,
 }
+
 #[function_component(UserLogin)]
 pub fn user_login() -> Html {
     let input_value_handle = use_state(LoginForm::default);
     let input_value = (*input_value_handle).clone();
-    let loading = use_state(||false);
-    let error_message = use_state(String::default);
+    let loading = use_state(|| false);
+    let _error_message = use_state(String::default);
     let on_input_change = {
         let input_value_handle = input_value_handle.clone();
 
@@ -49,10 +50,9 @@ pub fn user_login() -> Html {
         })
     };
     let on_submit = {
-        
         Callback::from(move |e: MouseEvent| {
             e.prevent_default();
-            console::log!("submit");
+            log!("submit");
             let current_form = (*input_value_handle).clone();
             let loading = loading.clone();
             loading.set(true);
@@ -65,7 +65,7 @@ pub fn user_login() -> Html {
                     .await
                     .unwrap();
                 let response_body = response.text().await.unwrap();
-                console::log!("response_body: {:?}", response_body);
+                log!("response_body: {:?}", response_body);
                 loading.set(false);
             });
         })
