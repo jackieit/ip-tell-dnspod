@@ -49,6 +49,7 @@ pub fn user_login() -> Html {
             }
         })
     };
+    let loading_disabled = loading.clone();
     let on_submit = {
         Callback::from(move |e: MouseEvent| {
             e.prevent_default();
@@ -70,6 +71,7 @@ pub fn user_login() -> Html {
             });
         })
     };
+
     html! {
         <div class="login-container">
             <div class="login-container-panel">
@@ -88,7 +90,7 @@ pub fn user_login() -> Html {
                         onchange={on_input_change.clone()} />
                     </div>
                     <div class="login-container-panel-form-item login-container-panel-form-button-area">
-                        <button class="login-container-panel-form-item-button" onclick={on_submit}>{"登录"}</button>
+                        <button class="login-container-panel-form-item-button" onclick={on_submit} disabled={*loading_disabled}>{"登录"}</button>
                     </div>
                 </div>
             </div>
