@@ -1,9 +1,14 @@
 //use axum_server::tls_rustls::RustlsConfig;
-use http::{header, header::{HeaderName,HeaderValue}, Method};
+use axum::{extract::connect_info::MockConnectInfo, Router};
+use http::{
+    header,
+    header::{HeaderName, HeaderValue},
+    Method,
+};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::task::JoinHandle;
 use tokio::sync::broadcast::Receiver;
+use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,
@@ -13,15 +18,12 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace,
 };
-use axum::{extract::connect_info::MockConnectInfo, Router};
-use tracing::{info,error};
+use tracing::{error, info};
 
 use crate::{
     web::middleware::{auth::auth, header::propagate_header, log_bearer::make_span_with},
     AppState,
 };
-
-
 
 pub async fn create_app(app_state: Arc<AppState>) -> Router {
     let root = format!("{}/wwwroot", env!("CARGO_MANIFEST_DIR"));
@@ -64,7 +66,7 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
                             Method::DELETE,
                             Method::OPTIONS,
                         ])
-                        .allow_origin(["http://127.0.0.1:8000".parse::<HeaderValue>().unwrap()])
+                        .allow_origin(["http://127.0.0.1:8001".parse::<HeaderValue>().unwrap()])
                         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
                         .allow_credentials(true),
                     //.expose_headers([header::HeaderName::from_static("x-request-id")]),
@@ -75,7 +77,11 @@ pub async fn create_app(app_state: Arc<AppState>) -> Router {
                 ))),
         )
 }
-pub async fn http_server(app_state: Arc<AppState>, background_task: JoinHandle<()>, mut shutdown_rx: Receiver<()>) {
+pub async fn http_server(
+    app_state: Arc<AppState>,
+    background_task: JoinHandle<()>,
+    mut shutdown_rx: Receiver<()>,
+) {
     println!("listening on {:?}", &app_state);
     let address = SocketAddr::from(([0, 0, 0, 0], 3310));
     let listener = tokio::net::TcpListener::bind(&address).await.unwrap();

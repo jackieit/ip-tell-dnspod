@@ -5,6 +5,7 @@ body {
   font-size: 14px;
   background: #ebecf0;
 }
+
 .login-container {
   display: flex;
   flex-direction: column;
@@ -12,13 +13,15 @@ body {
   justify-content: center;
   min-height: 100vh;
   background-color: #f0f0f0;
+
   &-panel {
     width: 320px;
     height: 320px;
     padding: 40px;
     background-color: #fff;
-    
+
     box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+
     &-title {
       font-size: 20px;
       font-weight: 400;
@@ -29,10 +32,13 @@ body {
       margin: 0 auto;
 
     }
+
     &-form {
       margin-top: 40px;
+
       &-item {
         width: 100%;
+
         &-input {
           width: 100%;
           height: 42px;
@@ -40,26 +46,36 @@ body {
           border: none;
           border-bottom: 1px solid #e3e6eb;
           padding-bottom: 6px;
-          &:focus,&:hover {
+
+          &:focus,
+          &:hover {
             border-color: #0052d9;
             outline: none;
           }
         }
+
         &-button {
           width: 100%;
           height: 48px;
           background-color: #0052d9;
           color: #fff;
           border: none;
+
           &:hover {
             background-color: #2272f4;
           }
         }
+
+        &-error {
+          color: red;
+          margin-top: 20px;
+        }
       }
+
       &-button-area {
-        margin-top: 60px;
+        margin-top: 40px;
         text-align: center;
-        
+
       }
     }
   }

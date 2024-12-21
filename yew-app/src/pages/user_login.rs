@@ -1,10 +1,11 @@
+use crate::Route;
 use gloo_console::log;
 use gloo_net::http::Request;
 use serde::Serialize;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::wasm_bindgen::JsCast;
-use web_sys::{EventTarget, HtmlInputElement};
+use web_sys::{wasm_bindgen::JsCast, window, EventTarget, HtmlInputElement};
 use yew::prelude::*;
+use yew_router::prelude::*;
 
 #[derive(Default, Clone, PartialEq, Serialize, Debug)]
 pub struct LoginForm {
@@ -14,10 +15,11 @@ pub struct LoginForm {
 
 #[function_component(UserLogin)]
 pub fn user_login() -> Html {
+    let navigator = use_navigator().unwrap(); // Add this near the top of the function
     let input_value_handle = use_state(LoginForm::default);
     let input_value = (*input_value_handle).clone();
     let loading = use_state(|| false);
-    let _error_message = use_state(String::default);
+    let error_message = use_state(String::default);
     let on_input_change = {
         let input_value_handle = input_value_handle.clone();
 
@@ -50,11 +52,15 @@ pub fn user_login() -> Html {
         })
     };
     let loading_disabled = loading.clone();
+    let error_message_show = error_message.clone();
+    //let error_message_show = error_message.clone();
     let on_submit = {
         Callback::from(move |e: MouseEvent| {
             e.prevent_default();
             log!("submit");
+            let navigator = navigator.clone();
             let current_form = (*input_value_handle).clone();
+            let error_message = error_message.clone();
             let loading = loading.clone();
             loading.set(true);
             spawn_local(async move {
@@ -63,11 +69,31 @@ pub fn user_login() -> Html {
                     .expect("Failed to serialize request data")
                     //.headers(vec![("Content-Type", "application/json")])
                     .send()
-                    .await
-                    .unwrap();
-                let response_body = response.text().await.unwrap();
-                log!("response_body: {:?}", response_body);
-                loading.set(false);
+                    .await;
+                if response.is_err() {
+                    error_message.set("Can't access the api service".to_string());
+                    loading.set(false);
+                    return;
+                }
+                let response = response.unwrap();
+                if response.status() != 200 {
+                    let response_body: serde_json::Value = response.json().await.unwrap();
+                    error_message.set(response_body["message"].as_str().unwrap().to_string());
+                    loading.set(false);
+                    return;
+                } else {
+                    let response_body: serde_json::Value = response.json().await.unwrap();
+                    let token = response_body["token"].as_str().unwrap().to_string();
+                    window()
+                        .unwrap()
+                        .local_storage()
+                        .unwrap()
+                        .unwrap()
+                        .set_item("token", &token)
+                        .unwrap();
+                    loading.set(false);
+                    navigator.push(&Route::Home);
+                }
             });
         })
     };
@@ -89,6 +115,9 @@ pub fn user_login() -> Html {
                         value={input_value.password.clone()}
                         onchange={on_input_change.clone()} />
                     </div>
+
+                    <div class="login-container-panel-form-item-error"><pre>{(*error_message_show).clone()}</pre></div>
+
                     <div class="login-container-panel-form-item login-container-panel-form-button-area">
                         <button class="login-container-panel-form-item-button" onclick={on_submit} disabled={*loading_disabled}>{"登录"}</button>
                     </div>
