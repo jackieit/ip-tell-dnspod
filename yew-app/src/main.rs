@@ -5,7 +5,8 @@ use yew_router::components::Link;
 use pages::user_login::UserLogin;
 
 pub mod pages;
-
+pub mod utils;
+pub mod error;
 /// defined router
 #[derive(Routable, PartialEq, Eq, Clone, Debug)]
 pub enum Route {
