@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yew_router::components::Link;
+use web_sys::window;
 
 use pages::user_login::UserLogin;
 
@@ -67,6 +68,15 @@ pub struct LayoutProps {
 // Create a Layout component
 #[function_component(Layout)]
 fn layout(props: &LayoutProps) -> Html {
+    let login_name = use_state(||{
+        let local_storage = window().unwrap().local_storage().unwrap().unwrap();
+        if let Some(name) = local_storage.get_item("itd_username").unwrap() {
+            name
+        } else {
+            "anonymous".to_string()
+        }
+    });
+    
     html! {
         <div class="app-container">
             <nav class="navbar">
@@ -74,6 +84,11 @@ fn layout(props: &LayoutProps) -> Html {
                 <Link<Route> to={Route::UserList}>{ "Users" }</Link<Route>>
                 <Link<Route> to={Route::App}>{ "App" }</Link<Route>>
                 <Link<Route> to={Route::Domain}>{ "Domain" }</Link<Route>>
+                <div class="navbar-right">
+                    <div> <p>{"您好 "}{(*login_name).clone()}{" 欢迎回到"}</p></div>
+                    <div class="app-name">{"IP TELL DNSPOD"}</div>
+                    
+                </div>
             </nav>
             
             <main class="main-content">
@@ -81,7 +96,7 @@ fn layout(props: &LayoutProps) -> Html {
             </main>
             
             <footer class="footer">
-                { "© 2024 Your App Name" }
+                { "© 2024 IP TELL DNSPOD All Rights Reserved." }
             </footer>
         </div>
     }

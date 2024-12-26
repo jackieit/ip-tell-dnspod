@@ -84,13 +84,10 @@ pub fn user_login() -> Html {
                 } else {
                     let response_body: serde_json::Value = response.json().await.unwrap();
                     let token = response_body["token"].as_str().unwrap().to_string();
-                    window()
-                        .unwrap()
-                        .local_storage()
-                        .unwrap()
-                        .unwrap()
-                        .set_item("token", &token)
-                        .unwrap();
+                    let local_storage = window().unwrap().local_storage().unwrap().unwrap();
+                    local_storage.set_item("itd_token", &token).unwrap();
+                    local_storage.set_item("itd_username", &current_form.username.clone()).unwrap();
+                     
                     loading.set(false);
                     navigator.push(&Route::Home);
                 }

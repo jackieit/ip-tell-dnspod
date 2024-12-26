@@ -4,8 +4,33 @@ body {
     microsoft yahei ui, microsoft yahei, simsun, "sans-serif";
   font-size: 14px;
   background: #ebecf0;
+  margin: 0;
 }
+.navbar {
+  height: 40px;
+  padding: 10px 0;
+  background: #9461fb;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  &-right{
 
+    color: #fff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+  }
+}
+.app-name{
+  font-size: 18px;
+  
+  font-family:'Times New Roman', Times, serif;
+  font-weight: bold;
+  margin: 0 10px;
+}
+// 登录页面
 .login-container {
   display: flex;
   flex-direction: column;

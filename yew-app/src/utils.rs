@@ -1,4 +1,5 @@
 use gloo_net::http::Request;
+use web_sys::window;
 
 use crate::error::{AppResult, Error};
 
@@ -37,6 +38,13 @@ where
     };
     request_builder = request_builder.header("Content-Type", "application/json");
     //todo add token
+    let local_storage = window().unwrap().local_storage().unwrap().unwrap();
+    let token = if let Some(name) = local_storage.get_item("itd_token").unwrap() {
+        name
+    } else {
+        "".to_string()
+    };
+    request_builder = request_builder.header("Authorization", &format!("Bearer {}", token));
     
     let response = if let Some(body) = options.body {
         request_builder.json(&body)?.send().await?
