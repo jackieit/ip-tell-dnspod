@@ -20,15 +20,50 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
-
+    .username {
+      color: #00e;
+      font-size: 16px; // 新增字体大小
+      font-weight: bold; // 新增字体粗细
+    }
   }
 }
+
 .app-name{
   font-size: 18px;
   
   font-family:'Times New Roman', Times, serif;
   font-weight: bold;
   margin: 0 10px;
+}
+.container {
+  width: 100%;
+  margin: 20px auto;
+  &-row{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+  }
+}
+.table {
+  width: 100%;
+}
+.table-striped{
+  background: #9461fb;
+  width: 100%;
+  margin: 0 auto;
+}
+/* 在大屏幕上保持固定宽度 */
+@media (min-width: 1200px) {
+  .table-striped {
+    width: 1024px;
+  }
+}
+.table-striped td,.table-striped th{
+  background: #fff;
+  height: 30px;
+  text-align: center;
+  color: #2b2b2b;
 }
 // 登录页面
 .login-container {
@@ -104,4 +139,7 @@ body {
       }
     }
   }
+}
+.footer{
+  text-align: center;
 }

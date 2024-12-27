@@ -4,7 +4,7 @@ use yew_router::components::Link;
 use web_sys::window;
 
 use pages::user_login::UserLogin;
-
+use pages::home::Home;
 pub mod pages;
 pub mod utils;
 pub mod error;
@@ -53,9 +53,7 @@ fn switch(route: Route) -> Html {
         },
         Route::Home => html! {
             <Layout>
-                <div>
-                    <h1>{ "Home" }</h1>
-                </div>
+                <Home />
             </Layout>
         },
         _ => html! { <NotFound /> },
@@ -85,7 +83,7 @@ fn layout(props: &LayoutProps) -> Html {
                 <Link<Route> to={Route::App}>{ "App" }</Link<Route>>
                 <Link<Route> to={Route::Domain}>{ "Domain" }</Link<Route>>
                 <div class="navbar-right">
-                    <div> <p>{"您好 "}{(*login_name).clone()}{" 欢迎回到"}</p></div>
+                    <div> <p>{"Hello "}<span class="username">{(*login_name).clone()}</span>{" Welcome to "}</p></div>
                     <div class="app-name">{"IP TELL DNSPOD"}</div>
                     
                 </div>
