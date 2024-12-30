@@ -8,6 +8,7 @@ use pages::home::Home;
 pub mod pages;
 pub mod utils;
 pub mod error;
+pub mod data_defined;
 /// defined router
 #[derive(Routable, PartialEq, Eq, Clone, Debug)]
 pub enum Route {

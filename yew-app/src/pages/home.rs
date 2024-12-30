@@ -2,9 +2,42 @@ use crate::Route;
 
 use yew::prelude::*;
 use yew_router::prelude::*;
+use wasm_bindgen_futures::spawn_local;
+use crate::data_defined::{RecordListItem,PagationRecords};
+
+use crate::utils::{request,RequestOptions};
 
 #[function_component(Home)]
 pub fn home() -> Html {
+    let loading = use_state(|| true);
+    let data = use_state(|| Vec::<RecordListItem>::new());
+    {
+      let data_clone = data.clone();
+      let loading_clone = loading.clone();
+      use_effect(
+          move || {
+              //let client = Client::new();
+              let request_options = RequestOptions {
+                  uri: "/records".to_string(),
+                  ..Default::default()
+              };
+
+              spawn_local(async move {
+                  match request::<PagationRecords>(request_options).await {
+                      Ok(resp) => {
+                          data_clone.set(resp.data);
+                      }
+                      Err(_) => {
+                          // Handle error
+                      }
+                  }
+                  loading_clone.set(false);
+              });
+
+              || ()
+          }
+      );
+  }
     html! {
         <div class="container">
             <div class="container-row">
@@ -25,22 +58,17 @@ pub fn home() -> Html {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>{"1"}</td>
-                      <td>{"www"}</td>
-                      <th>{"example"}</th>
-                      <td>{"A"}</td>
-                      <td>{"192.168.1.1"}</td>
-                      <td>{"修改"} {"|"} {"删除"}</td>
-                    </tr>
-                    <tr>
-                      <td>{"2"}</td>
-                      <td>{"@"}</td>
-                      <th>{"example"}</th>
-                      <td>{"AAAA"}</td>
-                      <td>{"2408:8214:3619:26a0:3d9d:13c8:3c6c:8f8a"}</td>
-                      <td>{"修改"} {"|"} {"删除"}</td>
-                    </tr>
+                    {for data.iter().map(|record| html!{
+                      <tr>
+                      <td>{record.id.to_string()}</td>
+                      <td>{&record.host}</td>
+                      <th>{&record.domain}</th>
+                      <td>{&record.ip_type}</td>
+                      <td>{&record.ip}</td>
+                        <td>{"修改"} {"|"} {"删除"}</td>
+                      </tr>
+                    })}
+ 
                   </tbody>
                 </table>
               </div>

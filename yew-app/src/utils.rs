@@ -16,24 +16,27 @@ impl Default for HttpMethod {
     }
 }
 #[derive(Debug, Clone, Default)]
-pub struct RequestOptions<T>
-where
-    T: serde::Serialize,
+pub struct RequestOptions
 {
     pub method: HttpMethod,
     pub uri: String,
-    pub body: Option<T>,
+    pub body: Option<String>,
 }
-pub async fn request<T, R>(options: RequestOptions<T>) -> AppResult<R>
+pub async fn request< R>(options: RequestOptions) -> AppResult<R>
 where
-    T: serde::Serialize,
     R: serde::de::DeserializeOwned,
 {
+    let uri: String = if options.uri.starts_with("http") {
+        options.uri
+    } else {
+        format!("http://localhost:3310/v1{}",options.uri)
+    };
+    
     let mut request_builder = match options.method {
-        HttpMethod::GET => Request::get(&options.uri),
-        HttpMethod::POST => Request::post(&options.uri),
-        HttpMethod::PUT => Request::put(&options.uri),
-        HttpMethod::DELETE => Request::delete(&options.uri),
+        HttpMethod::GET => Request::get(&uri),
+        HttpMethod::POST => Request::post(&uri),
+        HttpMethod::PUT => Request::put(&uri),
+        HttpMethod::DELETE => Request::delete(&uri),
         // _ => return Err(Error::InvalidMethod),
     };
     request_builder = request_builder.header("Content-Type", "application/json");
@@ -45,8 +48,10 @@ where
         "".to_string()
     };
     request_builder = request_builder.header("Authorization", &format!("Bearer {}", token));
-    
+
     let response = if let Some(body) = options.body {
+        let body:serde_json::Value = serde_json::from_str(&body).map_err(|_| Error::new("Invalid JSON".to_string(), "Invalid JSON".to_string()))?;
+
         request_builder.json(&body)?.send().await?
     } else {
         request_builder.send().await?
