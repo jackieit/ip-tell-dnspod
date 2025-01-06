@@ -5,6 +5,8 @@ use web_sys::window;
 
 use pages::user_login::UserLogin;
 use pages::home::Home;
+use pages::record::Record;
+
 pub mod pages;
 pub mod utils;
 pub mod error;
